@@ -1,0 +1,1915 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>期權輪子策略實戰教室</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<meta name="description" content="用輪子策略（Wheel Strategy）穩定收租，從零學賣 Put、Covered Call，含真倉實戰紀錄與陪跑計畫。適合想建立被動收入的美股期權新手。">
+<meta name="keywords" content="期權,輪子策略,Wheel Strategy,賣Put,Covered Call,美股期權,期權教學,被動收入,期權收租,sell put,期權新手,期權實戰">
+<meta name="author" content="stroll.income">
+<meta name="robots" content="index, follow">
+<meta property="og:title" content="期權輪子策略實戰教室">
+<meta property="og:description" content="用輪子策略穩定收租，從零學賣 Put 與 Covered Call，含真倉實戰紀錄與陪跑計畫。">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="zh_TW">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="期權輪子策略實戰教室">
+<meta name="twitter:description" content="用輪子策略穩定收租，從零學賣 Put 與 Covered Call，含真倉實戰紀錄與陪跑計畫。">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Noto+Sans+TC:wght@300;400;500;700;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg-primary: #0a0e17;
+  --bg-secondary: #111827;
+  --bg-card: #161f33;
+  --bg-card-hover: #1c2742;
+  --bg-analogy: #1a1e2e;
+  --accent-gold: #c9a84c;
+  --accent-gold-dim: #a08035;
+  --accent-cyan: #38bdf8;
+  --accent-green: #34d399;
+  --accent-red: #f87171;
+  --accent-amber: #fbbf24;
+  --text-primary: #e8eaf0;
+  --text-secondary: #94a3b8;
+  --text-dim: #64748b;
+  --border: #1e293b;
+  --border-light: #334155;
+  --glass: rgba(22, 31, 51, 0.7);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html {
+  scroll-behavior: smooth;
+  scrollbar-width: thin;
+  scrollbar-color: var(--accent-gold-dim) var(--bg-primary);
+}
+
+body {
+  font-family: 'Noto Sans TC', sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  overflow-x: hidden;
+  line-height: 1.8;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* ═══ Navigation ═══ */
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  padding: 1rem 2rem;
+  display: flex; justify-content: space-between; align-items: center;
+  backdrop-filter: blur(20px);
+  background: rgba(10, 14, 23, 0.85);
+  border-bottom: 1px solid var(--border);
+  transition: all 0.4s ease;
+}
+.nav-logo {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.4rem; font-weight: 700;
+  color: var(--accent-gold); letter-spacing: 1px;
+  display: flex; align-items: center; gap: 0.6rem;
+  cursor: pointer;
+}
+.nav-logo .dot {
+  width: 8px; height: 8px; background: var(--accent-gold);
+  border-radius: 50%; animation: pulse-dot 2s ease-in-out infinite;
+}
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.7); }
+}
+.nav-links { display: flex; gap: 2rem; list-style: none; }
+.nav-links a {
+  color: var(--text-secondary); text-decoration: none;
+  font-size: 0.85rem; font-weight: 500; letter-spacing: 0.5px;
+  transition: color 0.3s; position: relative;
+}
+.nav-links a::after {
+  content: ''; position: absolute; bottom: -4px; left: 0;
+  width: 0; height: 1px; background: var(--accent-gold); transition: width 0.3s ease;
+}
+.nav-links a:hover { color: var(--accent-gold); }
+.nav-links a:hover::after { width: 100%; }
+
+/* ═══ Hero ═══ */
+.hero {
+  min-height: 100vh; display: flex; align-items: center; justify-content: center;
+  position: relative; padding: 6rem 2rem 4rem; overflow: hidden;
+}
+.hero-bg-grid {
+  position: absolute; inset: 0;
+  background-image:
+    linear-gradient(rgba(201, 168, 76, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(201, 168, 76, 0.04) 1px, transparent 1px);
+  background-size: 60px 60px;
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 40%, black 30%, transparent 70%);
+}
+.hero-glow {
+  position: absolute; width: 600px; height: 600px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(201, 168, 76, 0.08) 0%, transparent 70%);
+  top: 10%; left: 50%; transform: translateX(-50%);
+  animation: float-glow 8s ease-in-out infinite;
+}
+@keyframes float-glow {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50% { transform: translateX(-50%) translateY(-30px); }
+}
+.hero-content { text-align: center; max-width: 900px; position: relative; z-index: 2; }
+.hero-badge {
+  display: inline-flex; align-items: center; gap: 0.5rem;
+  padding: 0.4rem 1.2rem; border: 1px solid var(--accent-gold-dim);
+  border-radius: 100px; font-size: 0.75rem; color: var(--accent-gold);
+  letter-spacing: 2px; text-transform: uppercase; margin-bottom: 2rem;
+  opacity: 0; animation: fadeUp 0.8s ease forwards 0.2s;
+}
+.hero h1 {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(2.8rem, 6vw, 5rem); font-weight: 900; line-height: 1.15;
+  margin-bottom: 1.5rem; opacity: 0; animation: fadeUp 0.8s ease forwards 0.4s;
+}
+.hero h1 .gold { color: var(--accent-gold); }
+.hero h1 .thin { font-weight: 400; font-style: italic; color: var(--text-secondary); }
+.hero-sub {
+  font-size: 1.1rem; color: var(--text-secondary); max-width: 600px;
+  margin: 0 auto 2.5rem; font-weight: 300;
+  opacity: 0; animation: fadeUp 0.8s ease forwards 0.6s;
+}
+.hero-cta {
+  display: inline-flex; align-items: center; gap: 0.6rem;
+  padding: 1rem 2.4rem;
+  background: linear-gradient(135deg, var(--accent-gold), var(--accent-gold-dim));
+  color: var(--bg-primary); font-weight: 700; font-size: 0.95rem;
+  border: none; border-radius: 6px; cursor: pointer; text-decoration: none;
+  transition: all 0.3s ease;
+  opacity: 0; animation: fadeUp 0.8s ease forwards 0.8s;
+}
+.hero-cta:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(201, 168, 76, 0.3); }
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ═══ Stats Bar ═══ */
+.stats-bar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--border); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+.stat-item { background: var(--bg-secondary); padding: 2rem 1.5rem; text-align: center; transition: background 0.3s; }
+.stat-item:hover { background: var(--bg-card); }
+.stat-number { font-family: 'Playfair Display', serif; font-size: 2.2rem; font-weight: 700; color: var(--accent-gold); display: block; }
+.stat-label { font-size: 0.8rem; color: var(--text-dim); letter-spacing: 1px; text-transform: uppercase; margin-top: 0.3rem; }
+
+/* ═══ Sections ═══ */
+section { padding: 6rem 2rem; }
+.section-header { text-align: center; margin-bottom: 4rem; }
+.section-tag { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: var(--accent-gold); letter-spacing: 3px; text-transform: uppercase; margin-bottom: 0.8rem; }
+.section-title { font-family: 'Playfair Display', serif; font-size: clamp(1.8rem, 4vw, 2.8rem); font-weight: 700; margin-bottom: 1rem; }
+.section-desc { font-size: 1rem; color: var(--text-secondary); max-width: 600px; margin: 0 auto; font-weight: 300; }
+
+/* ═══ Wheel Strategy Diagram ═══ */
+#wheel { background: var(--bg-secondary); }
+.wheel-container { max-width: 1100px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; align-items: center; }
+.wheel-visual { position: relative; width: 100%; aspect-ratio: 1; max-width: 440px; margin: 0 auto; }
+.wheel-ring { position: absolute; inset: 10%; border: 2px solid var(--border-light); border-radius: 50%; animation: rotate-slow 30s linear infinite; }
+@keyframes rotate-slow { to { transform: rotate(360deg); } }
+.wheel-ring::before { content: ''; position: absolute; top: -5px; left: 50%; width: 10px; height: 10px; background: var(--accent-gold); border-radius: 50%; transform: translateX(-50%); }
+.wheel-step { position: absolute; width: 130px; text-align: center; cursor: default; }
+.wheel-step-icon { width: 56px; height: 56px; margin: 0 auto 0.5rem; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; font-weight: 700; transition: all 0.3s ease; }
+.wheel-step:hover .wheel-step-icon { transform: scale(1.1); box-shadow: 0 4px 20px rgba(0,0,0,0.4); }
+.wheel-step-label { font-size: 0.85rem; font-weight: 500; color: var(--text-primary); }
+.wheel-step-sub { font-size: 0.7rem; color: var(--text-dim); margin-top: 0.2rem; }
+.ws-1 { top: 10%; left: 50%; transform: translate(-50%, -28px); }
+.ws-2 { top: 50%; left: 90%; transform: translate(-50%, -28px); }
+.ws-3 { top: 90%; left: 50%; transform: translate(-50%, -28px); }
+.ws-4 { top: 50%; left: 10%; transform: translate(-50%, -28px); }
+.ws-1 .wheel-step-icon { background: linear-gradient(135deg, #1a3a2a, #0d2618); color: var(--accent-green); border: 1px solid rgba(52, 211, 153, 0.3); }
+.ws-2 .wheel-step-icon { background: linear-gradient(135deg, #2a1a1a, #261010); color: var(--accent-red); border: 1px solid rgba(248, 113, 113, 0.3); }
+.ws-3 .wheel-step-icon { background: linear-gradient(135deg, #1a2a3a, #0d1826); color: var(--accent-cyan); border: 1px solid rgba(56, 189, 248, 0.3); }
+.ws-4 .wheel-step-icon { background: linear-gradient(135deg, #2a2a1a, #262010); color: var(--accent-amber); border: 1px solid rgba(251, 191, 36, 0.3); }
+.wheel-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 100px; height: 100px; border-radius: 50%; background: linear-gradient(135deg, var(--accent-gold), var(--accent-gold-dim)); display: flex; align-items: center; justify-content: center; font-family: 'Playfair Display', serif; font-size: 0.9rem; font-weight: 700; color: var(--bg-primary); text-align: center; line-height: 1.2; box-shadow: 0 0 40px rgba(201, 168, 76, 0.2); }
+.wheel-explanation { display: flex; flex-direction: column; gap: 1.5rem; }
+.wheel-exp-item { padding: 1.2rem 1.5rem; background: var(--bg-card); border-radius: 10px; border-left: 3px solid transparent; transition: all 0.3s ease; cursor: default; }
+.wheel-exp-item:hover { background: var(--bg-card-hover); transform: translateX(4px); }
+.wheel-exp-item:nth-child(1) { border-left-color: var(--accent-green); }
+.wheel-exp-item:nth-child(2) { border-left-color: var(--accent-red); }
+.wheel-exp-item:nth-child(3) { border-left-color: var(--accent-cyan); }
+.wheel-exp-item:nth-child(4) { border-left-color: var(--accent-amber); }
+.wheel-exp-title { font-weight: 700; font-size: 0.95rem; margin-bottom: 0.3rem; }
+.wheel-exp-desc { font-size: 0.82rem; color: var(--text-secondary); line-height: 1.6; }
+
+/* ═══ Course Section ═══ */
+#courses { max-width: 1200px; margin: 0 auto; }
+
+/* ── Landing View (cards grid) ── */
+#courseLanding { }
+.course-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.5rem; max-width: 1100px; margin: 0 auto; }
+.course-card {
+  background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px;
+  padding: 2rem; transition: all 0.4s ease; position: relative; overflow: hidden; cursor: default;
+}
+.course-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, var(--accent-gold), transparent); opacity: 0; transition: opacity 0.3s; }
+.course-card:hover { border-color: var(--accent-gold-dim); transform: translateY(-4px); box-shadow: 0 12px 40px rgba(0,0,0,0.3); }
+.course-card:hover::before { opacity: 1; }
+.course-level { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; letter-spacing: 2px; text-transform: uppercase; padding: 0.3rem 0.8rem; border-radius: 4px; display: inline-block; margin-bottom: 1rem; }
+.level-beginner { background: rgba(52, 211, 153, 0.1); color: var(--accent-green); border: 1px solid rgba(52, 211, 153, 0.2); }
+.level-intermediate { background: rgba(56, 189, 248, 0.1); color: var(--accent-cyan); border: 1px solid rgba(56, 189, 248, 0.2); }
+.level-advanced { background: rgba(251, 191, 36, 0.1); color: var(--accent-amber); border: 1px solid rgba(251, 191, 36, 0.2); }
+.course-title { font-family: 'Playfair Display', serif; font-size: 1.3rem; font-weight: 700; margin-bottom: 0.6rem; }
+.course-desc { font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1.5rem; line-height: 1.7; }
+.course-topics { list-style: none; display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1.5rem; }
+.course-topics li { font-size: 0.8rem; color: var(--text-dim); display: flex; align-items: center; gap: 0.5rem; }
+.course-topics li::before { content: '›'; color: var(--accent-gold); font-weight: 700; font-size: 1rem; }
+.course-meta { display: flex; justify-content: space-between; align-items: center; padding-top: 1rem; border-top: 1px solid var(--border); }
+.course-duration { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: var(--text-dim); }
+.course-btn { padding: 0.5rem 1.2rem; background: transparent; border: 1px solid var(--accent-gold-dim); color: var(--accent-gold); font-size: 0.8rem; font-weight: 500; border-radius: 5px; cursor: pointer; transition: all 0.3s ease; font-family: 'Noto Sans TC', sans-serif; }
+.course-btn:hover { background: var(--accent-gold); color: var(--bg-primary); }
+
+/* ── Unit Detail View ── */
+#courseDetail { display: none; max-width: 820px; margin: 0 auto; }
+.detail-back {
+  display: inline-flex; align-items: center; gap: 0.5rem;
+  color: var(--accent-gold); font-size: 0.85rem; font-weight: 500;
+  cursor: pointer; margin-bottom: 2.5rem; border: none; background: none;
+  font-family: 'Noto Sans TC', sans-serif; transition: opacity 0.3s;
+}
+.detail-back:hover { opacity: 0.7; }
+.detail-level-tag {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.7rem;
+  letter-spacing: 2px; text-transform: uppercase; color: var(--accent-gold);
+  margin-bottom: 0.5rem;
+}
+.detail-unit-title {
+  font-family: 'Playfair Display', serif; font-size: clamp(1.6rem, 3.5vw, 2.2rem);
+  font-weight: 700; margin-bottom: 2.5rem; line-height: 1.3;
+}
+
+/* Content blocks */
+.content-block { margin-bottom: 2.5rem; }
+.content-block h3 {
+  font-size: 1rem; font-weight: 700; color: var(--accent-gold);
+  margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;
+}
+.content-block p {
+  font-size: 0.92rem; color: var(--text-secondary); line-height: 2;
+  margin-bottom: 1rem;
+}
+.content-block strong { color: var(--text-primary); font-weight: 700; }
+
+/* Analogy card */
+.analogy-card {
+  background: var(--bg-analogy); border: 1px solid var(--border);
+  border-radius: 12px; padding: 1.8rem 2rem; margin: 1.5rem 0;
+  position: relative; overflow: hidden;
+}
+.analogy-card::before {
+  content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%;
+  background: linear-gradient(180deg, var(--accent-amber), var(--accent-gold-dim));
+}
+.analogy-icon {
+  font-size: 1.5rem; margin-bottom: 0.6rem; display: block;
+}
+.analogy-title {
+  font-size: 0.8rem; font-weight: 700; color: var(--accent-amber);
+  letter-spacing: 1px; text-transform: uppercase; margin-bottom: 0.8rem;
+}
+.analogy-card p {
+  font-size: 0.88rem; color: var(--text-secondary); line-height: 1.9; margin-bottom: 0.6rem;
+}
+.analogy-card ul {
+  list-style: none; padding: 0; margin: 0.5rem 0;
+}
+.analogy-card ul li {
+  font-size: 0.88rem; color: var(--text-secondary); line-height: 1.9;
+  padding-left: 1.2rem; position: relative; margin-bottom: 0.3rem;
+}
+.analogy-card ul li::before {
+  content: '•'; position: absolute; left: 0; color: var(--accent-amber);
+}
+
+/* Tables */
+.content-table {
+  width: 100%; border-collapse: collapse; margin: 1rem 0 1.5rem;
+  font-size: 0.82rem;
+}
+.content-table th {
+  text-align: left; padding: 0.7rem 1rem;
+  background: var(--bg-card); color: var(--accent-gold);
+  border-bottom: 2px solid var(--accent-gold-dim);
+  font-weight: 700; font-size: 0.75rem; letter-spacing: 0.5px; text-transform: uppercase;
+}
+.content-table td {
+  padding: 0.7rem 1rem; border-bottom: 1px solid var(--border);
+  color: var(--text-secondary);
+}
+.content-table tr:hover td { background: rgba(201, 168, 76, 0.03); }
+.content-table .highlight-row td { color: var(--accent-gold); font-weight: 500; }
+
+/* Key formula */
+.formula-box {
+  background: var(--bg-card); border: 1px solid var(--border-light);
+  border-radius: 10px; padding: 1.2rem 1.5rem; margin: 1rem 0;
+  font-family: 'JetBrains Mono', monospace; font-size: 0.85rem;
+  color: var(--accent-cyan); text-align: center; letter-spacing: 0.5px;
+}
+
+/* Example box */
+.example-box {
+  background: rgba(56, 189, 248, 0.04); border: 1px solid rgba(56, 189, 248, 0.15);
+  border-radius: 10px; padding: 1.5rem 1.8rem; margin: 1rem 0;
+}
+.example-box .example-tag {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.7rem;
+  color: var(--accent-cyan); letter-spacing: 1px; text-transform: uppercase;
+  margin-bottom: 0.6rem;
+}
+.example-box p {
+  font-size: 0.85rem; color: var(--text-secondary); line-height: 1.8; margin-bottom: 0.5rem;
+}
+
+/* Warning box */
+.warning-box {
+  background: rgba(248, 113, 113, 0.05); border: 1px solid rgba(248, 113, 113, 0.2);
+  border-radius: 10px; padding: 1.2rem 1.5rem; margin: 1rem 0;
+}
+.warning-box p { font-size: 0.85rem; color: var(--accent-red); line-height: 1.8; margin: 0; }
+
+/* Summary list */
+.summary-list { list-style: none; padding: 0; margin: 0.8rem 0; }
+.summary-list li {
+  font-size: 0.88rem; color: var(--text-secondary); line-height: 1.9;
+  padding: 0.5rem 0 0.5rem 1.6rem; position: relative;
+  border-bottom: 1px solid var(--border);
+}
+.summary-list li:last-child { border-bottom: none; }
+.summary-list li .num {
+  position: absolute; left: 0; color: var(--accent-gold); font-family: 'JetBrains Mono', monospace;
+  font-weight: 700; font-size: 0.8rem;
+}
+
+/* Decision tree */
+.decision-tree {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 10px; padding: 1.5rem 1.8rem; margin: 1rem 0;
+  font-family: 'JetBrains Mono', monospace; font-size: 0.8rem;
+  color: var(--text-secondary); line-height: 2; white-space: pre-line;
+}
+
+/* Navigation bar at bottom */
+.unit-nav {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-top: 3rem; padding-top: 2rem; border-top: 1px solid var(--border);
+}
+.unit-nav-btn {
+  display: flex; align-items: center; gap: 0.5rem;
+  padding: 0.7rem 1.5rem; border: 1px solid var(--border-light);
+  background: var(--bg-card); color: var(--text-primary); border-radius: 8px;
+  cursor: pointer; font-size: 0.85rem; font-family: 'Noto Sans TC', sans-serif;
+  transition: all 0.3s ease;
+}
+.unit-nav-btn:hover { border-color: var(--accent-gold); color: var(--accent-gold); background: var(--bg-card-hover); }
+.unit-nav-btn:disabled { opacity: 0.3; cursor: default; pointer-events: none; }
+.unit-nav-btn .arrow { font-size: 1.1rem; }
+.unit-nav-info { font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: var(--text-dim); letter-spacing: 1px; }
+
+/* Progress indicator */
+.progress-bar-container {
+  max-width: 820px; margin: 0 auto 2rem; height: 3px;
+  background: var(--border); border-radius: 2px; overflow: hidden;
+}
+.progress-bar-fill {
+  height: 100%; background: linear-gradient(90deg, var(--accent-gold), var(--accent-amber));
+  border-radius: 2px; transition: width 0.4s ease;
+}
+
+/* ═══ Greeks ═══ */
+#greeks { background: var(--bg-secondary); }
+.greeks-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--border); border-radius: 12px; overflow: hidden; max-width: 1000px; margin: 0 auto; }
+.greek-card { background: var(--bg-card); padding: 2.5rem 1.5rem; text-align: center; transition: all 0.3s ease; cursor: default; position: relative; }
+.greek-card:hover { background: var(--bg-card-hover); z-index: 2; }
+.greek-symbol { font-family: 'Playfair Display', serif; font-size: 3rem; font-weight: 900; display: block; margin-bottom: 0.5rem; transition: transform 0.3s ease; }
+.greek-card:hover .greek-symbol { transform: scale(1.15); }
+.greek-card:nth-child(1) .greek-symbol { color: var(--accent-cyan); }
+.greek-card:nth-child(2) .greek-symbol { color: var(--accent-green); }
+.greek-card:nth-child(3) .greek-symbol { color: var(--accent-amber); }
+.greek-card:nth-child(4) .greek-symbol { color: var(--accent-red); }
+.greek-name { font-weight: 700; font-size: 1rem; margin-bottom: 0.3rem; }
+.greek-en { font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: var(--text-dim); margin-bottom: 0.8rem; letter-spacing: 1px; }
+.greek-desc { font-size: 0.78rem; color: var(--text-secondary); line-height: 1.6; }
+
+/* ═══ Calculator ═══ */
+#calculator { max-width: 700px; margin: 0 auto; }
+.calc-tabs { display: flex; gap: 0; max-width: 600px; margin: 0 auto 0; }
+.calc-tab { flex: 1; padding: 0.9rem 1rem; background: var(--bg-secondary); border: 1px solid var(--border); color: var(--text-dim); font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease; text-align: center; font-family: 'Noto Sans TC', sans-serif; letter-spacing: 0.5px; }
+.calc-tab:first-child { border-radius: 12px 0 0 0; border-right: none; }
+.calc-tab:last-child { border-radius: 0 12px 0 0; }
+.calc-tab.active { background: var(--bg-card); color: var(--accent-gold); border-bottom-color: var(--bg-card); }
+.calc-tab:not(.active):hover { color: var(--text-secondary); background: var(--bg-card-hover); }
+.calc-box { background: var(--bg-card); border: 1px solid var(--border); border-top: none; border-radius: 0 0 16px 16px; padding: 2.5rem; max-width: 600px; margin: 0 auto; }
+.calc-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; margin-bottom: 1.2rem; }
+.calc-field label { display: block; font-size: 0.75rem; color: var(--text-dim); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 0.4rem; }
+.calc-field input, .calc-field select { width: 100%; padding: 0.8rem 1rem; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); font-family: 'JetBrains Mono', monospace; font-size: 0.95rem; outline: none; transition: border-color 0.3s; }
+.calc-field input:focus, .calc-field select:focus { border-color: var(--accent-gold); }
+.calc-btn { width: 100%; padding: 1rem; background: linear-gradient(135deg, var(--accent-gold), var(--accent-gold-dim)); color: var(--bg-primary); font-weight: 700; font-size: 0.95rem; border: none; border-radius: 8px; cursor: pointer; margin-top: 0.5rem; transition: all 0.3s ease; font-family: 'Noto Sans TC', sans-serif; }
+.calc-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(201, 168, 76, 0.3); }
+.calc-results { margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border); display: none; }
+.calc-results.show { display: block; }
+.result-row { display: flex; justify-content: space-between; align-items: center; padding: 0.7rem 0; }
+.result-row:not(:last-child) { border-bottom: 1px solid var(--border); }
+.result-label { font-size: 0.85rem; color: var(--text-secondary); }
+.result-value { font-family: 'JetBrains Mono', monospace; font-size: 1rem; font-weight: 500; color: var(--accent-green); }
+.result-value.highlight { font-size: 1.3rem; color: var(--accent-gold); font-weight: 700; }
+
+/* ═══ Glossary ═══ */
+#glossary { background: var(--bg-secondary); }
+.glossary-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; max-width: 1100px; margin: 0 auto; }
+.glossary-item { padding: 1.2rem 1.5rem; background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; transition: all 0.3s ease; cursor: default; }
+.glossary-item:hover { border-color: var(--accent-gold-dim); background: var(--bg-card-hover); }
+.glossary-en { font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: var(--accent-gold); letter-spacing: 1px; margin-bottom: 0.2rem; }
+.glossary-zh { font-weight: 700; font-size: 1rem; margin-bottom: 0.4rem; }
+.glossary-def { font-size: 0.8rem; color: var(--text-secondary); line-height: 1.6; }
+
+/* ═══ Ticker Tape ═══ */
+.ticker-tape { background: var(--bg-secondary); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); overflow: hidden; padding: 0.8rem 0; white-space: nowrap; }
+.ticker-content { display: inline-flex; animation: ticker-scroll 40s linear infinite; gap: 3rem; }
+.ticker-item { display: inline-flex; align-items: center; gap: 0.5rem; font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; }
+.ticker-symbol { color: var(--text-primary); font-weight: 500; }
+.ticker-price { color: var(--text-dim); }
+.ticker-change.up { color: var(--accent-green); }
+.ticker-change.down { color: var(--accent-red); }
+@keyframes ticker-scroll { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+
+/* ═══ Footer ═══ */
+footer { padding: 4rem 2rem 2rem; text-align: center; border-top: 1px solid var(--border); }
+.footer-brand { font-family: 'Playfair Display', serif; font-size: 1.2rem; color: var(--accent-gold); margin-bottom: 0.5rem; }
+.footer-desc { font-size: 0.8rem; color: var(--text-dim); margin-bottom: 2rem; }
+.footer-links { display: flex; justify-content: center; gap: 2rem; margin-bottom: 2rem; }
+.footer-links a { font-size: 0.8rem; color: var(--text-secondary); text-decoration: none; transition: color 0.3s; }
+.footer-links a:hover { color: var(--accent-gold); }
+.footer-copy { font-size: 0.7rem; color: var(--text-dim); }
+
+/* ═══ Scroll Animations ═══ */
+.reveal { opacity: 0; transform: translateY(30px); transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1); }
+.reveal.visible { opacity: 1; transform: translateY(0); }
+
+/* ═══ Records Section ═══ */
+#records { background: var(--bg-secondary); }
+.records-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem; max-width: 1100px; margin: 0 auto 3.5rem;
+}
+.record-card {
+  background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px;
+  padding: 2rem; display: flex; flex-direction: column; gap: 1rem;
+  text-decoration: none; color: inherit;
+  transition: all 0.4s ease; position: relative; overflow: hidden;
+}
+.record-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  background: linear-gradient(90deg, var(--accent-gold), var(--accent-gold-dim), transparent);
+  opacity: 0; transition: opacity 0.3s;
+}
+.record-card:hover {
+  border-color: var(--accent-gold-dim); transform: translateY(-4px);
+  box-shadow: 0 16px 48px rgba(0,0,0,0.35); background: var(--bg-card-hover);
+}
+.record-card:hover::before { opacity: 1; }
+.record-source-tag {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  font-family: 'JetBrains Mono', monospace; font-size: 0.65rem;
+  letter-spacing: 2px; text-transform: uppercase;
+  color: var(--accent-gold); background: rgba(201, 168, 76, 0.08);
+  border: 1px solid rgba(201, 168, 76, 0.2); border-radius: 4px;
+  padding: 0.25rem 0.7rem; align-self: flex-start;
+}
+.record-source-tag::before { content: '◆'; font-size: 0.5rem; }
+.record-title {
+  font-family: 'Playfair Display', serif; font-size: 1.2rem; font-weight: 700;
+  line-height: 1.4; color: var(--text-primary);
+  transition: color 0.3s;
+}
+.record-card:hover .record-title { color: var(--accent-gold); }
+.record-excerpt {
+  font-size: 0.85rem; color: var(--text-secondary); line-height: 1.8; flex: 1;
+}
+.record-excerpt .hook { color: var(--text-primary); font-weight: 500; }
+.record-readmore {
+  display: flex; align-items: center; gap: 0.4rem;
+  font-size: 0.8rem; color: var(--accent-gold);
+  font-weight: 500; margin-top: 0.5rem;
+  transition: gap 0.3s;
+}
+.record-card:hover .record-readmore { gap: 0.7rem; }
+.records-cta-wrap { text-align: center; }
+.records-cta {
+  display: inline-flex; align-items: center; gap: 0.6rem;
+  padding: 0.9rem 2.2rem; border: 1.5px solid var(--accent-gold-dim);
+  color: var(--accent-gold); font-weight: 700; font-size: 0.9rem;
+  border-radius: 6px; text-decoration: none;
+  transition: all 0.3s ease; letter-spacing: 0.3px;
+}
+.records-cta:hover {
+  background: var(--accent-gold); color: var(--bg-primary);
+  box-shadow: 0 6px 28px rgba(201, 168, 76, 0.28); transform: translateY(-2px);
+}
+
+/* ═══ Mentorship Section ═══ */
+#mentorship { background: var(--bg-primary); }
+.mentorship-inner { max-width: 900px; margin: 0 auto; }
+
+/* Pain points */
+.pain-block {
+  background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px;
+  padding: 2.5rem; margin-bottom: 4rem; position: relative; overflow: hidden;
+}
+.pain-block::after {
+  content: '';
+  position: absolute; bottom: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, var(--accent-gold-dim), transparent);
+}
+.pain-block-label {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.7rem;
+  color: var(--text-dim); letter-spacing: 2px; text-transform: uppercase;
+  margin-bottom: 1rem;
+}
+.pain-block p {
+  font-size: 1rem; color: var(--text-secondary); line-height: 2;
+  margin-bottom: 0.8rem;
+}
+.pain-block p:last-child { margin-bottom: 0; }
+.pain-block strong { color: var(--text-primary); font-weight: 600; }
+
+/* Journey path */
+.journey-section { margin-bottom: 4rem; }
+.journey-section-title {
+  font-family: 'Playfair Display', serif; font-size: 1.4rem; font-weight: 700;
+  margin-bottom: 2rem; color: var(--text-primary);
+}
+.journey-path { display: flex; flex-direction: column; gap: 0; }
+.journey-step {
+  display: grid; grid-template-columns: 56px 1fr; gap: 1.5rem;
+  align-items: stretch; position: relative;
+}
+.journey-step:not(:last-child) .step-connector { display: block; }
+.step-left { display: flex; flex-direction: column; align-items: center; }
+.step-num {
+  width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0;
+  background: linear-gradient(135deg, var(--accent-gold), var(--accent-gold-dim));
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; font-weight: 700;
+  color: var(--bg-primary); position: relative; z-index: 1;
+}
+.journey-step.highlight-step .step-num {
+  background: linear-gradient(135deg, var(--accent-cyan), #1e7aab);
+  box-shadow: 0 0 20px rgba(56, 189, 248, 0.2);
+}
+.step-line {
+  width: 1px; flex: 1; background: linear-gradient(180deg, var(--accent-gold-dim), var(--border));
+  margin: 4px 0; min-height: 24px;
+}
+.journey-step:last-child .step-line { display: none; }
+.step-body {
+  padding: 0 0 2rem;
+}
+.step-title { font-weight: 700; font-size: 0.95rem; color: var(--text-primary); margin-bottom: 0.3rem; }
+.step-desc { font-size: 0.82rem; color: var(--text-secondary); line-height: 1.7; }
+.journey-step.highlight-step .step-title { color: var(--accent-cyan); }
+.step-badge {
+  display: inline-block; margin-top: 0.5rem;
+  font-family: 'JetBrains Mono', monospace; font-size: 0.62rem;
+  letter-spacing: 1.5px; text-transform: uppercase;
+  color: var(--accent-cyan); background: rgba(56, 189, 248, 0.08);
+  border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 4px;
+  padding: 0.2rem 0.6rem;
+}
+
+/* Trust block */
+.trust-block {
+  background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px;
+  padding: 2.5rem; margin-bottom: 4rem;
+  border-left: 3px solid var(--accent-gold);
+}
+.trust-block-title {
+  font-family: 'Playfair Display', serif; font-size: 1.2rem; font-weight: 700;
+  margin-bottom: 1.5rem; color: var(--text-primary);
+}
+.trust-points { display: flex; flex-direction: column; gap: 1rem; }
+.trust-point {
+  display: flex; align-items: flex-start; gap: 0.8rem;
+  font-size: 0.88rem; color: var(--text-secondary); line-height: 1.7;
+}
+.trust-point-icon {
+  width: 28px; height: 28px; border-radius: 7px; flex-shrink: 0;
+  background: rgba(201, 168, 76, 0.1); border: 1px solid rgba(201, 168, 76, 0.2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.9rem; margin-top: 1px;
+}
+.trust-point a {
+  color: var(--accent-gold); text-decoration: none;
+  border-bottom: 1px solid rgba(201, 168, 76, 0.3);
+  transition: border-color 0.2s;
+}
+.trust-point a:hover { border-color: var(--accent-gold); }
+
+/* CTA block */
+.mentorship-cta-block { text-align: center; }
+.mentorship-cta-block .cta-heading {
+  font-family: 'Playfair Display', serif; font-size: 1.4rem; font-weight: 700;
+  margin-bottom: 0.6rem;
+}
+.mentorship-cta-block .cta-sub {
+  font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 2.5rem; line-height: 1.8;
+}
+.qr-container {
+  display: inline-block;
+  margin-bottom: 2rem;
+}
+.qr-placeholder {
+  width: 160px; height: 160px; background: var(--bg-secondary);
+  border-radius: 8px; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 0.5rem;
+}
+.qr-placeholder .qr-icon {
+  font-size: 2.5rem; opacity: 0.3;
+}
+.qr-placeholder .qr-label {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.65rem;
+  color: var(--text-dim); letter-spacing: 1px; text-transform: uppercase;
+}
+.qr-caption {
+  display: block; font-size: 0.78rem; color: var(--text-dim);
+  margin-top: 0.6rem; text-align: center;
+}
+.mentorship-main-cta {
+  display: inline-flex; align-items: center; gap: 0.6rem;
+  padding: 1rem 2.4rem;
+  background: linear-gradient(135deg, var(--accent-gold), var(--accent-gold-dim));
+  color: var(--bg-primary); font-weight: 700; font-size: 0.95rem;
+  border: none; border-radius: 6px; cursor: pointer; text-decoration: none;
+  transition: all 0.3s ease;
+}
+.mentorship-main-cta:hover {
+  transform: translateY(-2px); box-shadow: 0 8px 30px rgba(201, 168, 76, 0.3);
+}
+.mentorship-disclaimer {
+  margin-top: 2rem; padding: 1rem 1.5rem;
+  background: rgba(248, 113, 113, 0.04); border: 1px solid rgba(248, 113, 113, 0.12);
+  border-radius: 8px; font-size: 0.75rem; color: var(--text-dim); line-height: 1.7;
+  max-width: 640px; margin-left: auto; margin-right: auto;
+}
+
+/* ═══ Responsive ═══ */
+@media (max-width: 900px) {
+  .wheel-container { grid-template-columns: 1fr; }
+  .greeks-grid { grid-template-columns: repeat(2, 1fr); }
+  .stats-bar { grid-template-columns: repeat(2, 1fr); }
+  .nav-links { display: none; }
+}
+@media (max-width: 600px) {
+  .calc-row { grid-template-columns: 1fr; }
+  .greeks-grid { grid-template-columns: 1fr; }
+  .stats-bar { grid-template-columns: 1fr; }
+  section { padding: 4rem 1.2rem; }
+  .analogy-card { padding: 1.3rem 1.2rem; }
+  .unit-nav { flex-direction: column; gap: 1rem; }
+}
+</style>
+</head>
+<body>
+
+<!-- Navigation -->
+<nav>
+  <div class="nav-logo" onclick="goHome()">
+    <span class="dot"></span>
+    期權輪子策略實戰教室
+  </div>
+  <ul class="nav-links">
+    <li><a href="#wheel">Wheel 策略</a></li>
+    <li><a href="#courses">課程</a></li>
+    <li><a href="#records">實戰紀錄</a></li>
+    <li><a href="#mentorship">陪跑計畫</a></li>
+    <li><a href="#greeks">Greeks</a></li>
+    <li><a href="#calculator">計算器</a></li>
+    <li><a href="#glossary">術語表</a></li>
+  </ul>
+</nav>
+
+<!-- Ticker Tape -->
+<div class="ticker-tape" style="margin-top: 56px;">
+  <div class="ticker-content" id="ticker"></div>
+</div>
+
+<!-- Hero -->
+<section class="hero" id="home">
+  <div class="hero-bg-grid"></div>
+  <div class="hero-glow"></div>
+  <div class="hero-content">
+    <div class="hero-badge">▲ 實戰導向 · 系統學習</div>
+    <h1>用 <span class="gold">Wheel Strategy</span><br><span class="thin">打造你的期權現金流</span></h1>
+    <p class="hero-sub">從 Sell Put 到 Covered Call，完整拆解選擇權被動收入策略。<br>不靠猜方向，靠紀律收租。</p>
+    <a href="#courses" class="hero-cta">開始學習 →</a>
+  </div>
+</section>
+
+<!-- Stats -->
+<div class="stats-bar">
+  <div class="stat-item"><span class="stat-number">4</span><span class="stat-label">核心模組</span></div>
+  <div class="stat-item"><span class="stat-number">16</span><span class="stat-label">教學單元</span></div>
+  <div class="stat-item"><span class="stat-number">∞</span><span class="stat-label">實戰複盤</span></div>
+  <div class="stat-item"><span class="stat-number">100%</span><span class="stat-label">真金白銀</span></div>
+</div>
+
+<!-- Wheel Strategy -->
+<section id="wheel">
+  <div class="section-header reveal">
+    <div class="section-tag">Core Strategy</div>
+    <h2 class="section-title">The Wheel — 輪轉策略全解析</h2>
+    <p class="section-desc">四步循環、持續收租，把時間價值化為你的被動收入</p>
+  </div>
+  <div class="wheel-container reveal">
+    <div class="wheel-visual">
+      <div class="wheel-ring"></div>
+      <div class="wheel-center">收租<br>循環</div>
+      <div class="wheel-step ws-1"><div class="wheel-step-icon">SP</div><div class="wheel-step-label">Sell Put</div><div class="wheel-step-sub">賣出賣權 收權利金</div></div>
+      <div class="wheel-step ws-2"><div class="wheel-step-icon">⬇</div><div class="wheel-step-label">被指派</div><div class="wheel-step-sub">以履約價買入 100 股</div></div>
+      <div class="wheel-step ws-3"><div class="wheel-step-icon">CC</div><div class="wheel-step-label">Covered Call</div><div class="wheel-step-sub">持股賣出買權 繼續收租</div></div>
+      <div class="wheel-step ws-4"><div class="wheel-step-icon">⬆</div><div class="wheel-step-label">被指派</div><div class="wheel-step-sub">以履約價賣出持股</div></div>
+    </div>
+    <div class="wheel-explanation">
+      <div class="wheel-exp-item"><div class="wheel-exp-title">① Sell Put — 等待接貨收租金</div><div class="wheel-exp-desc">選一檔你真心願意持有的股票，在你想買進的價位賣出 Put。如果股價沒跌到，權利金入袋；如果跌到了，你以理想價格接貨。</div></div>
+      <div class="wheel-exp-item"><div class="wheel-exp-title">② 被指派 — 以折扣價買入</div><div class="wheel-exp-desc">股價跌破履約價，你被指派以 Strike Price 買入 100 股。實際成本 = 履約價 − 已收權利金，相當於打折買入。</div></div>
+      <div class="wheel-exp-item"><div class="wheel-exp-title">③ Covered Call — 持股繼續收租</div><div class="wheel-exp-desc">手上有 100 股，在成本以上的價位賣出 Call 繼續收權利金。CC 的履約價必須 ≥ 成本價，避免鎖虧。</div></div>
+      <div class="wheel-exp-item"><div class="wheel-exp-title">④ 被 Call 走 — 股票賣出，重新循環</div><div class="wheel-exp-desc">股價漲超 Call 的履約價，你以獲利價賣出持股。拿回資金，回到步驟 ① 開始下一輪收租。</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- Courses -->
+<section id="courses">
+  <!-- Landing View -->
+  <div id="courseLanding">
+    <div class="section-header reveal">
+      <div class="section-tag">Curriculum</div>
+      <h2 class="section-title">系統化課程</h2>
+      <p class="section-desc">從期權基礎到進階策略，循序漸進的實戰學習路徑</p>
+    </div>
+    <div class="course-grid reveal">
+      <div class="course-card">
+        <span class="course-level level-beginner">Level 01 · 入門</span>
+        <h3 class="course-title">期權基礎認知</h3>
+        <p class="course-desc">理解選擇權的本質：權利與義務、買方與賣方、Call 與 Put 的四種組合。</p>
+        <ul class="course-topics"><li>什麼是選擇權？買保險 vs 賣保險</li><li>四種基本部位：Buy/Sell × Call/Put</li><li>權利金的構成：內含價值 + 時間價值</li><li>ITM / ATM / OTM 判斷</li></ul>
+        <div class="course-meta"><span class="course-duration">4 單元 · 約 2 小時</span><button class="course-btn" onclick="openUnit('1-1')">進入學習</button></div>
+      </div>
+      <div class="course-card">
+        <span class="course-level level-beginner">Level 02 · 實戰</span>
+        <h3 class="course-title">Sell Put 實戰</h3>
+        <p class="course-desc">Wheel 策略的第一步：如何選股、選履約價、選到期日，收取你的第一筆權利金。</p>
+        <ul class="course-topics"><li>Sell Put 的收益結構與風險</li><li>選股四步驟 Buy SOP</li><li>Delta、DTE、IV Rank 實務選擇</li><li>年化報酬率計算與下單流程</li></ul>
+        <div class="course-meta"><span class="course-duration">4 單元 · 約 3 小時</span><button class="course-btn" onclick="openUnit('2-1')">進入學習</button></div>
+      </div>
+      <div class="course-card">
+        <span class="course-level level-intermediate">Level 03 · 進階</span>
+        <h3 class="course-title">Covered Call 實戰</h3>
+        <p class="course-desc">被指派後的下一步：如何用 CC 降低持股成本、持續收租，同時避免常見錯誤。</p>
+        <ul class="course-topics"><li>CC 的收益上限與機會成本</li><li>履約價選擇：為何必須 ≥ 成本價</li><li>Roll 策略：Buy to Close + Sell to Open</li><li>被 Call 走後的資金再部署</li></ul>
+        <div class="course-meta"><span class="course-duration">4 單元 · 約 2.5 小時</span><button class="course-btn" onclick="openUnit('3-1')">進入學習</button></div>
+      </div>
+      <div class="course-card">
+        <span class="course-level level-advanced">Level 04 · 高階</span>
+        <h3 class="course-title">風控與組合管理</h3>
+        <p class="course-desc">從單一策略到投資組合：部位管理、資金分配、展期決策與心態紀律。</p>
+        <ul class="course-topics"><li>資金管理：每筆部位佔比上限</li><li>展期（Roll）的時機與條件</li><li>多標的 Wheel 組合管理</li><li>交易日誌與績效追蹤</li></ul>
+        <div class="course-meta"><span class="course-duration">4 單元 · 約 2 小時</span><button class="course-btn" onclick="openUnit('4-1')">進入學習</button></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Detail View (dynamic) -->
+  <div id="courseDetail"></div>
+</section>
+
+<!-- Records -->
+<section id="records">
+  <div class="section-header reveal">
+    <div class="section-tag">Real Trades</div>
+    <h2 class="section-title">實戰紀錄</h2>
+    <p class="section-desc">真倉、真單、持續記錄。不是回測，不是模擬，是我實際開過的每一筆單。</p>
+  </div>
+  <div class="records-grid reveal">
+
+    <!-- Card 1 -->
+    <a class="record-card" href="https://vocus.cc/article/6a13ccadfd89780001728c6a" target="_blank" rel="noopener">
+      <span class="record-source-tag">方格子</span>
+      <div class="record-title">我媽 60 歲學期權收租：從入門到上手，從零開始的被動收入之路</div>
+      <p class="record-excerpt">
+       教自己的爸媽用 3C，是什麼感覺，相信大家都懂。光是教我媽改個手機鬧鐘，就可以來回十分鐘，中間還會被唸一句「你講太快我聽不懂」。所以當我決定要教她用期權收租的時候，我心裡是有底的，這大概不會太輕鬆。
+       <span class="hook">後來她真的開出第一張期權單了。整個教學過程，我都記在方格子裡。</span>
+      </p>
+      <div class="record-readmore">閱讀完整紀錄 →</div>
+    </a>
+
+    <!-- Card 2 -->
+    <a class="record-card" href="https://vocus.cc/article/69f038eafd89780001cb3e91" target="_blank" rel="noopener">
+      <span class="record-source-tag">方格子</span>
+      <div class="record-title">美股輪子策略實戰一個月，我賺了多少？</div>
+      <p class="record-excerpt">
+        新手實戰美股輪子策略一個月，到底能賺多少？答案是 $652 美金。本金 25,000 美元，操作 NFLX、TSM、NVDA、INTC 四檔，8 筆交易全數安穩入袋，月報酬率 2.6%。這篇紀錄我怎麼設目標、怎麼選股、為什麼這個策略適合想多一份現金流的小資族。
+        <span class="hook">怎麼選這四檔、每筆怎麼設定、為什麼 8 筆都沒被指派——完整操作邏輯在方格子。</span>
+      </p>
+      <div class="record-readmore">閱讀完整紀錄 →</div>
+    </a>
+
+    <!-- Card 3 -->
+    <a class="record-card" href="https://vocus.cc/article/69f75f02fd89780001ae0b99" target="_blank" rel="noopener">
+      <span class="record-source-tag">方格子</span>
+      <div class="record-title">股市漲成這樣，該追、該等，還是該換個玩法？</div>
+      <p class="record-excerpt">
+        四月份的台股漲幅就不用多說了，打開帳戶大家都看到了。 那種「市場幾乎得了不會跌得病」的感覺，應該不少人有共鳴，美股那邊也沒閒著，費城半導體指數（SOX）締造了史上最長的連漲紀錄，AI 概念股繼續發功，整個指數像是充滿多巴胺一樣往上衝。 這時候市場大概會自動分成兩派人。
+        <span class="hook">我選了第三條路，並且把當時的判斷和操作記在方格子。</span>
+      </p>
+      <div class="record-readmore">閱讀完整紀錄 →</div>
+    </a>
+
+  </div>
+  <div class="records-cta-wrap reveal">
+    <a class="records-cta" href="https://vocus.cc/salon/wheel_strategy" target="_blank" rel="noopener">看更多真實紀錄 →</a>
+  </div>
+</section>
+
+<!-- Mentorship -->
+<section id="mentorship">
+  <div class="mentorship-inner">
+    <div class="section-header reveal" style="margin-bottom: 3rem;">
+      <div class="section-tag">One-on-One</div>
+      <h2 class="section-title">陪跑計畫</h2>
+      <p class="section-desc">從零開始，走到第一筆收租——我陪你走完這段路。</p>
+    </div>
+
+    <!-- Pain points -->
+    <div class="pain-block reveal">
+      <div class="pain-block-label">你是不是也卡在這裡</div>
+      <p>想開始做 Sell Put 收租，但打開 IBKR 或 Webull 的介面，完全不知道按鈕在哪裡、要填什麼數字，就先關掉了。</p>
+      <p>看了很多教學影片和文章，理論上懂了，但<strong>就是不敢下那第一單</strong>。萬一搞錯怎麼辦？萬一被指派了然後不知道接下來要幹嘛？</p>
+      <p>或者更早一步——<strong>還沒開好海外帳戶，甚至不確定自己的資金規模適不適合這個策略</strong>。想找人問，但又不想在論壇裡被一堆人海投資建議轟炸。</p>
+      <p>這個陪跑計畫，就是為這個狀態的你設計的。</p>
+    </div>
+
+    <!-- Journey path -->
+    <div class="journey-section reveal">
+      <div class="journey-section-title">這個陪跑帶你走完的路</div>
+      <div class="journey-path">
+
+        <div class="journey-step">
+          <div class="step-left">
+            <div class="step-num">01</div>
+            <div class="step-line"></div>
+          </div>
+          <div class="step-body">
+            <div class="step-title">開海外券商帳戶</div>
+            <div class="step-desc">哪家適合你、文件怎麼準備、開戶流程踩過什麼坑——帶你一步步弄好，不用自己亂猜。</div>
+          </div>
+        </div>
+
+        <div class="journey-step">
+          <div class="step-left">
+            <div class="step-num">02</div>
+            <div class="step-line"></div>
+          </div>
+          <div class="step-body">
+            <div class="step-title">入金</div>
+            <div class="step-desc">從台灣匯錢出去的方式、匯率時機的基本考量、第一次入金的常見問題。</div>
+          </div>
+        </div>
+
+        <div class="journey-step">
+          <div class="step-left">
+            <div class="step-num">03</div>
+            <div class="step-line"></div>
+          </div>
+          <div class="step-body">
+            <div class="step-title">熟悉期權操作介面</div>
+            <div class="step-desc">手把手帶你看券商介面的期權鏈怎麼讀、各個欄位代表什麼、找到你要的合約在哪裡。</div>
+          </div>
+        </div>
+
+        <div class="journey-step">
+          <div class="step-left">
+            <div class="step-num">04</div>
+            <div class="step-line"></div>
+          </div>
+          <div class="step-body">
+            <div class="step-title">怎麼挑收租標的</div>
+            <div class="step-desc">不是任何股票都適合 Wheel。我的篩選思路：流動性、IV Rank、公司基本面的最低門檻——你自己能判斷，才是重點。</div>
+          </div>
+        </div>
+
+        <div class="journey-step">
+          <div class="step-left">
+            <div class="step-num">05</div>
+            <div class="step-line"></div>
+          </div>
+          <div class="step-body">
+            <div class="step-title">怎麼下單賣 Put</div>
+            <div class="step-desc">Delta 怎麼選、DTE 怎麼想、Limit 還是 Market——從看盤到真的按下確認鍵，整個流程走一遍。</div>
+          </div>
+        </div>
+
+        <div class="journey-step">
+          <div class="step-left">
+            <div class="step-num">06</div>
+            <div class="step-line"></div>
+          </div>
+          <div class="step-body">
+            <div class="step-title">怎麼平倉與處理被指派</div>
+            <div class="step-desc">到期作廢的情況、提早平倉的邏輯、以及被指派後下一步（接貨 → 開始賣 CC）的完整路徑。</div>
+          </div>
+        </div>
+
+        <div class="journey-step highlight-step">
+          <div class="step-left">
+            <div class="step-num">＋</div>
+            <div class="step-line"></div>
+          </div>
+          <div class="step-body">
+            <div class="step-title">線下 3 小時手把手前置知識教學</div>
+            <div class="step-desc">正式開始操作前，我們先把期權基礎、Wheel 邏輯、Greeks 的實務判讀，用一個下午一次講清楚。不是上課，比較像對談——你可以一直問。</div>
+            <span class="step-badge">台北面授 / 視訊皆可</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Trust block -->
+    <div class="trust-block reveal">
+      <div class="trust-block-title">為什麼是我</div>
+      <div class="trust-points">
+        <div class="trust-point">
+          <div class="trust-point-icon">📋</div>
+          <div>
+            我有<strong>持續公開的真倉紀錄</strong>，不是事後重建的交易截圖，是一筆一筆當時就記下來的操作過程。你可以去<a href="#records" onclick="event.preventDefault(); document.getElementById('records').scrollIntoView({behavior:'smooth'})">看看實戰紀錄</a>，自己判斷這個人的操作邏輯合不合理，再決定要不要繼續聊。
+          </div>
+        </div>
+        <div class="trust-point">
+          <div class="trust-point-icon">👤</div>
+          <div>
+            我不是職業交易員，<strong>就是普通人帳戶</strong>在做這件事。帳戶規模、操作頻率，跟多數剛起步的人差不多。所以我遇過的問題和你會遇到的，大概率是一樣的。
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CTA block -->
+    <div class="mentorship-cta-block reveal">
+      <div class="cta-heading">連我媽 60 歲都能上手，你也可以</div>
+      <div class="cta-sub">
+        她從「下單前手會抖」，到現在主動找我問下一筆要怎麼開。<br>
+        期權不是天才的遊戲，是可以教的東西。先聊聊你的背景和目標，再決定要不要一起走這段路。
+      </div>
+
+      <!-- QR code -->
+      <div style="margin-bottom: 1rem;">
+        <div class="qr-container">
+          <img src="qrcod.jpg" alt="Threads QR Code" style="width:140px;height:140px;display:block;margin:0 auto;" />
+          <span class="qr-caption">掃碼加 Threads</span>
+        </div>
+      </div>
+
+      <div style="margin-bottom: 1.5rem;">
+        <a class="mentorship-main-cta" href="https://www.threads.com/@stroll.income" target="_blank" rel="noopener">
+          私訊我聊聊 →
+        </a>
+      </div>
+
+      <div class="mentorship-disclaimer">
+        本陪跑計畫的定位是「期權操作教學與練習陪伴」，內容涵蓋券商操作、策略邏輯說明與實務練習。教學內容不構成投資建議，所有操作決策由學員自行判斷與承擔。投資有風險，入市前請確認自身風險承受能力。
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- Greeks -->
+<section id="greeks">
+  <div class="section-header reveal">
+    <div class="section-tag">Option Greeks</div>
+    <h2 class="section-title">掌握 Greeks — 你的風險儀表板</h2>
+    <p class="section-desc">每一個 Greek 都在告訴你：你的部位對什麼因素有多敏感</p>
+  </div>
+  <div class="greeks-grid reveal">
+    <div class="greek-card"><span class="greek-symbol">Δ</span><div class="greek-name">Delta</div><div class="greek-en">DELTA</div><div class="greek-desc">股價變動 $1 時，期權價格的變動幅度。也可視為到期時 ITM 的機率估算。</div></div>
+    <div class="greek-card"><span class="greek-symbol">Θ</span><div class="greek-name">Theta</div><div class="greek-en">THETA</div><div class="greek-desc">每天時間流逝造成的權利金衰減。賣方的好朋友 — 時間站在你這邊。</div></div>
+    <div class="greek-card"><span class="greek-symbol">Γ</span><div class="greek-name">Gamma</div><div class="greek-en">GAMMA</div><div class="greek-desc">Delta 的變化速度。接近到期時 ATM 的 Gamma 會劇增，這是賣方要注意的風險。</div></div>
+    <div class="greek-card"><span class="greek-symbol">V</span><div class="greek-name">Vega</div><div class="greek-en">VEGA</div><div class="greek-desc">隱含波動率每變動 1% 時，權利金的變化量。高 IV 環境對賣方有利。</div></div>
+  </div>
+</section>
+
+<!-- Calculator -->
+<section id="calculator">
+  <div class="section-header reveal">
+    <div class="section-tag">Tool</div>
+    <h2 class="section-title">Wheel 策略計算器</h2>
+    <p class="section-desc">Sell Put 與 Covered Call 年化報酬率 · 一鍵估算</p>
+  </div>
+
+  <div class="reveal">
+    <!-- Tabs -->
+    <div class="calc-tabs">
+      <div class="calc-tab active" onclick="switchCalc('sp')" id="tabSP">Sell Put</div>
+      <div class="calc-tab" onclick="switchCalc('cc')" id="tabCC">Covered Call</div>
+    </div>
+
+    <!-- Sell Put Calculator -->
+    <div class="calc-box" id="calcSP">
+      <div class="calc-row">
+        <div class="calc-field"><label>股票代碼</label><input type="text" id="spSymbol" placeholder="e.g. NFLX" value="NFLX"></div>
+        <div class="calc-field"><label>目前股價 ($)</label><input type="number" id="spPrice" placeholder="1050" value="1050"></div>
+      </div>
+      <div class="calc-row">
+        <div class="calc-field"><label>履約價 Strike ($)</label><input type="number" id="spStrike" placeholder="1000" value="1000"></div>
+        <div class="calc-field"><label>每股權利金 ($/股)</label><input type="number" id="spPremium" placeholder="12" value="12"></div>
+      </div>
+      <div class="calc-row">
+        <div class="calc-field"><label>距到期天數 (DTE)</label><input type="number" id="spDTE" placeholder="30" value="30"></div>
+        <div class="calc-field"><label>合約數量</label><input type="number" id="spContracts" placeholder="1" value="1"></div>
+      </div>
+      <button class="calc-btn" onclick="calcSP()">計算 Sell Put 年化報酬 →</button>
+      <div class="calc-results" id="spResults">
+        <div class="result-row"><span class="result-label">總權利金收入</span><span class="result-value" id="spR1">—</span></div>
+        <div class="result-row"><span class="result-label">最大風險（保證金）</span><span class="result-value" id="spR2">—</span></div>
+        <div class="result-row"><span class="result-label">單筆報酬率</span><span class="result-value" id="spR3">—</span></div>
+        <div class="result-row"><span class="result-label">年化報酬率</span><span class="result-value highlight" id="spR4">—</span></div>
+        <div class="result-row"><span class="result-label">安全緩衝 (Buffer)</span><span class="result-value" id="spR5">—</span></div>
+        <div class="result-row"><span class="result-label">損益兩平價</span><span class="result-value" id="spR6">—</span></div>
+      </div>
+    </div>
+
+    <!-- Covered Call Calculator -->
+    <div class="calc-box" id="calcCC" style="display:none;">
+      <div class="calc-row">
+        <div class="calc-field"><label>股票代碼</label><input type="text" id="ccSymbol" placeholder="e.g. NFLX" value="NFLX"></div>
+        <div class="calc-field"><label>目前股價 ($)</label><input type="number" id="ccPrice" placeholder="1000" value="1000"></div>
+      </div>
+      <div class="calc-row">
+        <div class="calc-field"><label>持股成本 ($/股)</label><input type="number" id="ccCost" placeholder="988" value="988"></div>
+        <div class="calc-field"><label>CC 履約價 Strike ($)</label><input type="number" id="ccStrike" placeholder="1050" value="1050"></div>
+      </div>
+      <div class="calc-row">
+        <div class="calc-field"><label>每股權利金 ($/股)</label><input type="number" id="ccPremium" placeholder="8" value="8"></div>
+        <div class="calc-field"><label>距到期天數 (DTE)</label><input type="number" id="ccDTE" placeholder="30" value="30"></div>
+      </div>
+      <div class="calc-row">
+        <div class="calc-field"><label>合約數量（每張 = 100 股）</label><input type="number" id="ccContracts" placeholder="1" value="1"></div>
+        <div class="calc-field"></div>
+      </div>
+      <button class="calc-btn" onclick="calcCC()">計算 CC 年化報酬 →</button>
+      <div class="calc-results" id="ccResults">
+        <div class="result-row"><span class="result-label">總權利金收入</span><span class="result-value" id="ccR1">—</span></div>
+        <div class="result-row"><span class="result-label">持股總成本</span><span class="result-value" id="ccR2">—</span></div>
+        <div class="result-row"><span class="result-label">單筆報酬率（以持股成本計）</span><span class="result-value" id="ccR3">—</span></div>
+        <div class="result-row"><span class="result-label">年化報酬率</span><span class="result-value highlight" id="ccR4">—</span></div>
+        <div class="result-row"><span class="result-label">最大獲利（含價差 + 權利金）</span><span class="result-value" id="ccR5">—</span></div>
+        <div class="result-row"><span class="result-label">上漲緩衝（距被 Call 走）</span><span class="result-value" id="ccR6">—</span></div>
+        <div class="result-row"><span class="result-label">下方保護（損益兩平價）</span><span class="result-value" id="ccR7">—</span></div>
+        <div class="result-row" id="ccWarningRow" style="display:none;"><span class="result-label" style="color:var(--accent-red);">⚠️ 履約價 < 成本價</span><span class="result-value" style="color:var(--accent-red);" id="ccR8">—</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Glossary -->
+<section id="glossary">
+  <div class="section-header reveal">
+    <div class="section-tag">Terminology</div>
+    <h2 class="section-title">期權術語速查</h2>
+    <p class="section-desc">中英對照，隨時查閱</p>
+  </div>
+  <div class="glossary-grid reveal">
+    <div class="glossary-item"><div class="glossary-en">SELL PUT (CSP)</div><div class="glossary-zh">賣出賣權</div><div class="glossary-def">以現金擔保方式賣出 Put，承諾以履約價買入股票，收取權利金作為補償。</div></div>
+    <div class="glossary-item"><div class="glossary-en">COVERED CALL (CC)</div><div class="glossary-zh">掩護性買權</div><div class="glossary-def">持有 100 股以上時賣出 Call，承諾以履約價賣出持股，收取權利金。</div></div>
+    <div class="glossary-item"><div class="glossary-en">STRIKE PRICE</div><div class="glossary-zh">履約價</div><div class="glossary-def">期權合約約定的買入/賣出價格，是決定 ITM/OTM 的基準點。</div></div>
+    <div class="glossary-item"><div class="glossary-en">DTE (Days to Expiration)</div><div class="glossary-zh">距到期天數</div><div class="glossary-def">離期權到期日的剩餘天數，直接影響時間價值和 Theta 衰減速度。</div></div>
+    <div class="glossary-item"><div class="glossary-en">IV RANK</div><div class="glossary-zh">隱含波動率排名</div><div class="glossary-def">當前 IV 在過去一年的百分位數。IV Rank 高代表權利金相對昂貴，有利於賣方。</div></div>
+    <div class="glossary-item"><div class="glossary-en">ROLL (展期)</div><div class="glossary-zh">展期</div><div class="glossary-def">Buy to Close 當前合約 + Sell to Open 新合約。通常延後到期日或調整履約價，收取淨信用。</div></div>
+    <div class="glossary-item"><div class="glossary-en">ASSIGNMENT</div><div class="glossary-zh">被指派</div><div class="glossary-def">賣方被要求履行義務：Sell Put 被指派需買入股票；Sell Call 被指派需賣出股票。</div></div>
+    <div class="glossary-item"><div class="glossary-en">THETA DECAY</div><div class="glossary-zh">時間價值衰減</div><div class="glossary-def">期權的時間價值隨到期日逼近而加速衰減。越接近到期，Theta 越大，對賣方越有利。</div></div>
+    <div class="glossary-item"><div class="glossary-en">BREAKEVEN</div><div class="glossary-zh">損益兩平點</div><div class="glossary-def">Sell Put 的損益兩平 = 履約價 − 權利金。股價跌破此價位，賣方才開始虧損。</div></div>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer>
+  <div class="footer-brand">期權輪子策略實戰教室</div>
+  <div class="footer-desc">Wheel Strategy 系統教學 · 真金白銀實戰記錄</div>
+  <div class="footer-links">
+    <a href="#wheel">Wheel 策略</a><a href="#courses">課程</a><a href="#records">實戰紀錄</a><a href="#mentorship">陪跑計畫</a><a href="#greeks">Greeks</a><a href="#calculator">計算器</a><a href="#glossary">術語表</a>
+  </div>
+  <div class="footer-copy">© 2026 期權輪子策略實戰教室 — 投資有風險，入市需謹慎</div>
+</footer>
+
+<script>
+// ═══ Ticker Tape ═══
+const tickerData = [
+  { symbol: 'NFLX', price: '1,042.50', change: '+2.3%', up: true },
+  { symbol: 'NVDA', price: '168.32', change: '-1.1%', up: false },
+  { symbol: 'AAPL', price: '234.18', change: '+0.8%', up: true },
+  { symbol: 'TSLA', price: '278.45', change: '+3.2%', up: true },
+  { symbol: 'MSFT', price: '442.67', change: '-0.4%', up: false },
+  { symbol: 'GOOG', price: '178.90', change: '+1.5%', up: true },
+  { symbol: 'AMZN', price: '198.34', change: '+0.6%', up: true },
+  { symbol: 'SPY', price: '578.12', change: '-0.2%', up: false },
+];
+function buildTicker() {
+  const el = document.getElementById('ticker');
+  const items = tickerData.map(t => `<span class="ticker-item"><span class="ticker-symbol">${t.symbol}</span><span class="ticker-price">$${t.price}</span><span class="ticker-change ${t.up?'up':'down'}">${t.change}</span></span>`).join('');
+  el.innerHTML = items + items;
+}
+buildTicker();
+
+// ═══ Calculator Tab Switch ═══
+function switchCalc(mode) {
+  document.getElementById('calcSP').style.display = mode === 'sp' ? 'block' : 'none';
+  document.getElementById('calcCC').style.display = mode === 'cc' ? 'block' : 'none';
+  document.getElementById('tabSP').classList.toggle('active', mode === 'sp');
+  document.getElementById('tabCC').classList.toggle('active', mode === 'cc');
+}
+
+// ═══ Sell Put Calculator ═══
+function calcSP() {
+  const price = parseFloat(document.getElementById('spPrice').value);
+  const strike = parseFloat(document.getElementById('spStrike').value);
+  const premium = parseFloat(document.getElementById('spPremium').value);
+  const dte = parseInt(document.getElementById('spDTE').value);
+  const contracts = parseInt(document.getElementById('spContracts').value);
+  if (!price || !strike || !premium || !dte || !contracts) return;
+
+  const totalPremium = premium * 100 * contracts;
+  const maxRisk = strike * 100 * contracts;             // 佔用保證金 = 履約價 × 100
+  const singleReturn = (totalPremium / maxRisk) * 100;   // 單筆報酬率
+  const annualized = (singleReturn / dte) * 365;          // 年化
+  const buffer = ((price - strike) / price) * 100;        // 安全緩衝 = 股價離履約價的距離
+  const breakeven = strike - premium;                     // 損益兩平 = 履約價 − 每股權利金
+
+  document.getElementById('spR1').textContent = `$${totalPremium.toFixed(2)}`;
+  document.getElementById('spR2').textContent = `$${maxRisk.toLocaleString()}`;
+  document.getElementById('spR3').textContent = `${singleReturn.toFixed(2)}%`;
+  document.getElementById('spR4').textContent = `${annualized.toFixed(1)}%`;
+  document.getElementById('spR5').textContent = `${buffer.toFixed(1)}%`;
+  document.getElementById('spR6').textContent = `$${breakeven.toFixed(2)}`;
+  document.getElementById('spResults').classList.add('show');
+}
+
+// ═══ Covered Call Calculator ═══
+function calcCC() {
+  const price = parseFloat(document.getElementById('ccPrice').value);
+  const cost = parseFloat(document.getElementById('ccCost').value);
+  const strike = parseFloat(document.getElementById('ccStrike').value);
+  const premium = parseFloat(document.getElementById('ccPremium').value);
+  const dte = parseInt(document.getElementById('ccDTE').value);
+  const contracts = parseInt(document.getElementById('ccContracts').value);
+  if (!price || !cost || !strike || !premium || !dte || !contracts) return;
+
+  const shares = 100 * contracts;
+  const totalPremium = premium * shares;                          // 總權利金
+  const totalCost = cost * shares;                                // 持股總成本
+  const singleReturn = (totalPremium / totalCost) * 100;          // 單筆報酬率 = 權利金 ÷ 持股成本
+  const annualized = (singleReturn / dte) * 365;                  // 年化報酬率
+  const maxProfit = ((strike - cost) * shares) + totalPremium;    // 最大獲利 = 價差利潤 + 權利金
+  const upBuffer = ((strike - price) / price) * 100;              // 上漲緩衝 = 股價漲多少%會被 Call 走
+  const breakeven = cost - premium;                               // 下方損益兩平 = 成本 − 權利金
+
+  document.getElementById('ccR1').textContent = `$${totalPremium.toFixed(2)}`;
+  document.getElementById('ccR2').textContent = `$${totalCost.toLocaleString()}`;
+  document.getElementById('ccR3').textContent = `${singleReturn.toFixed(2)}%`;
+  document.getElementById('ccR4').textContent = `${annualized.toFixed(1)}%`;
+  document.getElementById('ccR5').textContent = `$${maxProfit.toFixed(2)}`;
+  document.getElementById('ccR6').textContent = `${upBuffer.toFixed(1)}%`;
+  document.getElementById('ccR7').textContent = `$${breakeven.toFixed(2)}`;
+
+  // 警告：履約價 < 成本價
+  const warningRow = document.getElementById('ccWarningRow');
+  if (strike < cost) {
+    const lockedLoss = ((cost - strike) * shares) - totalPremium;
+    warningRow.style.display = 'flex';
+    document.getElementById('ccR8').textContent = lockedLoss > 0 ? `鎖定虧損 $${lockedLoss.toFixed(2)}` : `權利金可覆蓋價差`;
+  } else {
+    warningRow.style.display = 'none';
+  }
+
+  document.getElementById('ccResults').classList.add('show');
+}
+
+// ═══ Scroll Reveal ═══
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => { if (entry.isIntersecting) entry.target.classList.add('visible'); });
+}, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+// ═══ Nav scroll ═══
+window.addEventListener('scroll', () => {
+  document.querySelector('nav').style.padding = window.scrollY > 100 ? '0.6rem 2rem' : '1rem 2rem';
+});
+
+// ═══════════════════════════════════════
+// ═══ COURSE CONTENT DATA ═══
+// ═══════════════════════════════════════
+
+const UNITS = [
+  // ── LEVEL 01 ──
+  {
+    id: '1-1', level: 'LEVEL 01 · 入門', levelColor: 'green',
+    title: '什麼是選擇權？買保險 vs 賣保險',
+    content: `
+      <div class="content-block">
+        <h3>📘 核心概念</h3>
+        <p>選擇權（Options）是一種金融合約，賦予買方在特定日期前，以特定價格買入或賣出標的資產的<strong>「權利」</strong>。注意——是「權利」，不是「義務」。</p>
+        <p>這裡有一個關鍵的不對稱性：</p>
+        <ul class="summary-list">
+          <li><span class="num">▸</span><strong>買方（Buyer）</strong>：付出權利金，獲得權利，沒有義務。他可以選擇執行，也可以選擇放棄。</li>
+          <li><span class="num">▸</span><strong>賣方（Seller）</strong>：收取權利金，承擔義務。只要買方決定執行，賣方就必須履約。</li>
+        </ul>
+        <p>這就是選擇權最核心的概念：<strong>權利與義務的不對稱交換</strong>。</p>
+        <p>我們在 Wheel 策略中扮演的角色，就是「保險公司」——透過賣出選擇權，持續收取權利金作為收入。</p>
+      </div>
+
+      <div class="analogy-card">
+        <span class="analogy-icon">🏠</span>
+        <div class="analogy-title">生活化比喻 — 火災保險</div>
+        <p>想像你幫房子買了一份火災險：</p>
+        <ul>
+          <li><strong>你（買方）</strong> 每年付 3,000 元保費給保險公司。失火了保險公司必須賠你；平安無事你只損失 3,000 元保費——但買到了一整年的安心。</li>
+          <li><strong>保險公司（賣方）</strong> 收了 3,000 元保費。沒出事就是純利潤；出事了就要承擔理賠。</li>
+        </ul>
+        <p>在選擇權的世界裡：保費 ＝ <strong>權利金</strong>，投保人 ＝ <strong>選擇權買方</strong>，保險公司 ＝ <strong>選擇權賣方</strong>。</p>
+      </div>
+
+      <div class="content-block">
+        <h3>📋 重點整理</h3>
+        <table class="content-table">
+          <tr><th>角色</th><th>付出</th><th>獲得</th><th>風險特徵</th></tr>
+          <tr><td>買方</td><td>權利金</td><td>權利（可執行也可放棄）</td><td>最大損失 = 權利金</td></tr>
+          <tr><td>賣方</td><td>承擔義務</td><td>權利金收入</td><td>潛在損失可能遠大於權利金</td></tr>
+        </table>
+      </div>
+    `
+  },
+  {
+    id: '1-2', level: 'LEVEL 01 · 入門', levelColor: 'green',
+    title: '四種基本部位：Buy/Sell × Call/Put',
+    content: `
+      <div class="content-block">
+        <h3>📘 核心概念</h3>
+        <p>選擇權有兩個維度的選擇：<strong>方向</strong>（Call 看漲 / Put 看跌）和<strong>動作</strong>（Buy 買入 / Sell 賣出）。兩兩組合，形成四種基本部位：</p>
+        <table class="content-table">
+          <tr><th>部位</th><th>你的觀點</th><th>你的角色</th><th>白話解釋</th></tr>
+          <tr><td><strong>Buy Call</strong></td><td>看漲</td><td>買方（付權利金）</td><td>我賭它會漲，付一點錢買上漲的權利</td></tr>
+          <tr><td><strong>Sell Call</strong></td><td>看不漲</td><td>賣方（收權利金）</td><td>我賭它不會漲太多，收租金承擔被買走的風險</td></tr>
+          <tr><td><strong>Buy Put</strong></td><td>看跌</td><td>買方（付權利金）</td><td>我賭它會跌，付一點錢買下跌的保護</td></tr>
+          <tr class="highlight-row"><td><strong>Sell Put</strong></td><td>看不跌</td><td>賣方（收權利金）</td><td>我賭它不會跌太多，收租金承擔被迫買股的風險</td></tr>
+        </table>
+      </div>
+
+      <div class="analogy-card">
+        <span class="analogy-icon">🏡</span>
+        <div class="analogy-title">生活化比喻 — 房地產交易</div>
+        <p>想像你看上一間市價 1,000 萬的房子：</p>
+        <ul>
+          <li><strong>Buy Call（看漲）</strong>：你付 10 萬訂金鎖定一個月內可以用 1,000 萬買下。房價漲到 1,200 萬你執行合約賺 200 萬；房價跌了你放棄訂金損失 10 萬。</li>
+          <li><strong>Sell Put（看不跌）</strong>：你承諾「如果跌到 900 萬以下，我用 900 萬買下」。對方付你 5 萬作為承諾代價。不跌就白賺 5 萬；真跌了你也是用自己能接受的價格買入。</li>
+        </ul>
+      </div>
+
+      <div class="content-block">
+        <h3>💡 重點提醒</h3>
+        <p>對初學者來說，不需要急著搞懂全部四種。Wheel 策略只用到兩種：</p>
+        <ul class="summary-list">
+          <li><span class="num">1.</span><strong>Sell Put</strong>：等待被指派買入股票</li>
+          <li><span class="num">2.</span><strong>Covered Call（Sell Call + 持股）</strong>：持有股票後賣出上漲的權利</li>
+        </ul>
+        <p>先把這兩種搞透，其他的自然水到渠成。</p>
+      </div>
+    `
+  },
+  {
+    id: '1-3', level: 'LEVEL 01 · 入門', levelColor: 'green',
+    title: '權利金的構成：內含價值 + 時間價值',
+    content: `
+      <div class="content-block">
+        <h3>📘 核心概念</h3>
+        <p>每一份選擇權的價格（權利金 Premium）都由兩個部分組成：</p>
+        <div class="formula-box">權利金 = 內含價值（Intrinsic Value） + 時間價值（Time Value）</div>
+        <ul class="summary-list">
+          <li><span class="num">▸</span><strong>內含價值</strong>：如果你「現在」立刻執行這個選擇權，能獲得的實際利潤。只有 ITM（價內）的選擇權才有內含價值。</li>
+          <li><span class="num">▸</span><strong>時間價值</strong>：你為「未來還有可能發生變化」這件事所付的代價。離到期日越遠，不確定性越高，時間價值越大。</li>
+        </ul>
+        <p>這也是為什麼賣方天然有優勢——<strong>時間永遠站在賣方這邊</strong>。就算股價完全不動，每過一天，買方手中的選擇權就會因為時間價值流失而貶值，而這些流失的價值，就流進了賣方的口袋。</p>
+      </div>
+
+      <div class="analogy-card">
+        <span class="analogy-icon">🍦</span>
+        <div class="analogy-title">生活化比喻 — 冰淇淋</div>
+        <p>把時間價值想成一球冰淇淋：</p>
+        <ul>
+          <li>剛買來的時候，冰淇淋是完整的一球（時間價值最高）</li>
+          <li>隨著時間過去，它會慢慢融化（時間價值遞減 = <strong>Theta 衰減</strong>）</li>
+          <li>到了最後一刻（到期日），冰淇淋完全融化，只剩下底下的甜筒（內含價值，如果有的話）</li>
+        </ul>
+      </div>
+
+      <div class="example-box">
+        <div class="example-tag">數字範例</div>
+        <p>假設 NFLX 現在股價 <strong>$1,050</strong>，有一張 Put 選擇權：履約價 = $1,000，權利金 = $15</p>
+        <p>因為股價 $1,050 > 履約價 $1,000，這張 Put 是 <strong>OTM（價外）</strong>，所以：</p>
+        <p>內含價值 = <strong>$0</strong>（執行它沒有利潤）・時間價值 = <strong>$15</strong>（全部都是時間價值）</p>
+        <p>如果到期時股價還在 $1,000 以上，這 $15 就全部歸零——<strong>賣方賺走全部</strong>。</p>
+      </div>
+    `
+  },
+  {
+    id: '1-4', level: 'LEVEL 01 · 入門', levelColor: 'green',
+    title: 'ITM / ATM / OTM 判斷',
+    content: `
+      <div class="content-block">
+        <h3>📘 核心概念</h3>
+        <p>這三個術語描述的是「選擇權的履約價」和「股票現價」之間的關係：</p>
+        <table class="content-table">
+          <tr><th>術語</th><th>英文全稱</th><th>意思</th></tr>
+          <tr><td><strong>ITM</strong></td><td>In The Money（價內）</td><td>選擇權「現在」執行就有利潤</td></tr>
+          <tr><td><strong>ATM</strong></td><td>At The Money（價平）</td><td>履約價 ≈ 現在的股價</td></tr>
+          <tr><td><strong>OTM</strong></td><td>Out of The Money（價外）</td><td>選擇權「現在」執行沒有利潤</td></tr>
+        </table>
+        <p>判斷方式因 Call 和 Put 而不同：</p>
+        <p><strong>Call（買入的權利）：</strong>ITM = 股價 > 履約價；OTM = 股價 < 履約價</p>
+        <p><strong>Put（賣出的權利）：</strong>ITM = 股價 < 履約價；OTM = 股價 > 履約價</p>
+      </div>
+
+      <div class="analogy-card">
+        <span class="analogy-icon">👟</span>
+        <div class="analogy-title">生活化比喻 — 折價券</div>
+        <p>想像你有一張「用 $500 買某款球鞋」的折價券：</p>
+        <ul>
+          <li>球鞋市價 $600 → 折價券是 <strong>ITM</strong>（用 $500 買到 $600 的鞋，省 $100）</li>
+          <li>球鞋市價 $500 → 折價券是 <strong>ATM</strong>（剛好打平）</li>
+          <li>球鞋市價 $400 → 折價券是 <strong>OTM</strong>（市場更便宜，誰要用 $500 買？）</li>
+        </ul>
+      </div>
+
+      <div class="content-block">
+        <h3>🎯 在 Sell Put 策略中的意義</h3>
+        <p>當我們 Sell Put 時，我們選的履約價通常在 <strong>OTM</strong> 的位置。這代表：</p>
+        <ul class="summary-list">
+          <li><span class="num">▸</span>只要到期時股價不跌破我們選的履約價，選擇權就會過期作廢（expire worthless），我們<strong>全額保留權利金</strong>。</li>
+          <li><span class="num">▸</span>如果股價跌到 ITM，我們就會被指派（assigned），必須用履約價買入 100 股。但因為我們本來就是選自己願意持有的好公司，被指派等於是「打折買進喜歡的股票」。</li>
+        </ul>
+      </div>
+    `
+  },
+
+  // ── LEVEL 02 ──
+  {
+    id: '2-1', level: 'LEVEL 02 · 實戰', levelColor: 'green',
+    title: 'Sell Put 的收益結構與風險',
+    content: `
+      <div class="content-block">
+        <h3>📘 核心概念</h3>
+        <p>Sell Put 就是你向市場承諾：「如果股價跌到某個價位以下，我願意用那個價格買入 100 股。」作為這個承諾的回報，你立刻收到一筆權利金。</p>
+        <p><strong>收益結構：</strong></p>
+        <ul class="summary-list">
+          <li><span class="num">▸</span><strong>最大獲利</strong> = 收到的權利金（固定的、確定的）</li>
+          <li><span class="num">▸</span><strong>最大虧損</strong> = 履約價 × 100 − 收到的權利金（理論上，如果股價跌到 $0）</li>
+          <li><span class="num">▸</span><strong>損益平衡點</strong> = 履約價 − 每股權利金</li>
+        </ul>
+        <p>收益圖形的特徵：當股價 > 履約價 → 賺取全部權利金 ✅；當股價 < 履約價 → 開始產生帳面虧損，但已收的權利金提供緩衝。</p>
+      </div>
+
+      <div class="analogy-card">
+        <span class="analogy-icon">🅿️</span>
+        <div class="analogy-title">生活化比喻 — 預購停車位</div>
+        <p>你跟鄰居說：「如果這個社區的停車位價格跌到 80 萬以下，我承諾用 80 萬買一個。」鄰居付你 2 萬作為回報。</p>
+        <ul>
+          <li>停車位維持在 80 萬以上 → 你白賺 2 萬</li>
+          <li>跌到 75 萬 → 你必須用 80 萬買入，扣掉收到的 2 萬，實際成本是 78 萬</li>
+          <li>但你本來就想買一個停車位，所以這不算壞事</li>
+        </ul>
+        <p>這就是 Sell Put 的精髓——<strong>只對自己本來就想買的股票賣 Put</strong>。</p>
+      </div>
+
+      <div class="warning-box">
+        <p>⚠️ <strong>風險提醒</strong>：Sell Put 不是零風險策略。例如你在 NFLX $1,000 Sell Put 收 $15 權利金，若 NFLX 突然跌到 $800，帳面虧損 = ($1,000 − $800 − $15) × 100 = <strong>$18,500</strong>。所以選標的必須是你真心願意長期持有的公司。</p>
+      </div>
+    `
+  },
+  {
+    id: '2-2', level: 'LEVEL 02 · 實戰', levelColor: 'green',
+    title: '選股四步驟 Buy SOP',
+    content: `
+      <div class="content-block">
+        <h3>📘 核心概念</h3>
+        <p>不是所有股票都適合做 Sell Put。一套系統化的選股流程能幫助你避免踩雷：</p>
+
+        <p><strong>步驟一：基本面過濾</strong>——這家公司你願意持有一年以上嗎？</p>
+        <ul class="summary-list">
+          <li><span class="num">▸</span>公司有穩定或成長的營收和獲利</li>
+          <li><span class="num">▸</span>商業模式你理解（巴菲特原則：不懂的不碰）</li>
+          <li><span class="num">▸</span>不是靠單一產品或單一客戶生存的公司</li>
+        </ul>
+
+        <p><strong>步驟二：流動性檢查</strong>——這張選擇權好不好交易？</p>
+        <ul class="summary-list">
+          <li><span class="num">▸</span>該股票的選擇權日均成交量是否足夠（越大型股票通常越好）</li>
+          <li><span class="num">▸</span>Bid-Ask Spread 在權利金的 5%-10% 以內</li>
+        </ul>
+
+        <p><strong>步驟三：帳戶容量確認</strong>——你有足夠資金嗎？</p>
+        <ul class="summary-list">
+          <li><span class="num">▸</span>佔用資金 ≈ 履約價 × 100</li>
+          <li><span class="num">▸</span>原則：<strong>單一部位不超過帳戶資金的 30%-50%</strong></li>
+        </ul>
+
+        <p><strong>步驟四：IV Rank 確認</strong>——現在的權利金夠肥嗎？</p>
+        <ul class="summary-list">
+          <li><span class="num">▸</span>IV Rank > 30：不錯的進場時機</li>
+          <li><span class="num">▸</span>IV Rank < 20：可能不值得佔用資金</li>
+        </ul>
+      </div>
+
+      <div class="analogy-card">
+        <span class="analogy-icon">🔑</span>
+        <div class="analogy-title">生活化比喻 — 挑房客</div>
+        <ul>
+          <li><strong>信用調查（基本面）</strong>：這個房客有穩定收入嗎？會按時繳房租嗎？</li>
+          <li><strong>地段考量（流動性）</strong>：這個地點好出租也好脫手嗎？</li>
+          <li><strong>預算確認（帳戶容量）</strong>：我的財力能買得起這間房嗎？</li>
+          <li><strong>租金行情（IV Rank）</strong>：現在的租金回報率值得投資嗎？</li>
+        </ul>
+      </div>
+    `
+  },
+  {
+    id: '2-3', level: 'LEVEL 02 · 實戰', levelColor: 'green',
+    title: 'Delta、DTE、IV Rank 實務選擇',
+    content: `
+      <div class="content-block">
+        <h3>📘 核心概念</h3>
+        <p>決定了標的股之後，接下來要做三個關鍵決定。</p>
+
+        <p><strong>Delta — 履約價的選擇指南針</strong></p>
+        <p>Delta 的絕對值可以粗略理解為「這張選擇權到期時變成 ITM 的機率」。</p>
+        <table class="content-table">
+          <tr><th>Delta 範圍</th><th>被指派機率</th><th>權利金</th><th>適合情境</th></tr>
+          <tr><td>-0.10 ~ -0.15</td><td>約 10%-15%</td><td>很少</td><td>極保守，可能不值得佔用資金</td></tr>
+          <tr class="highlight-row"><td>-0.20 ~ -0.35</td><td>約 20%-35%</td><td>甜蜜區</td><td>推薦的實戰範圍</td></tr>
+          <tr><td>-0.40 ~ -0.50</td><td>約 40%-50%</td><td>較多</td><td>激進，被指派機率高</td></tr>
+        </table>
+
+        <p><strong>DTE（Days To Expiration）— 到期日的選擇</strong></p>
+        <table class="content-table">
+          <tr><th>DTE 範圍</th><th>特性</th><th>建議</th></tr>
+          <tr><td>7-14 天</td><td>Theta 衰減最快，但 Gamma 風險也最高</td><td>不建議新手</td></tr>
+          <tr class="highlight-row"><td>20-35 天</td><td>Theta 衰減速度合理，Gamma 風險可控</td><td>推薦的實戰範圍</td></tr>
+          <tr><td>45-60 天</td><td>衰減較慢，但有更多時間應對</td><td>中性偏保守</td></tr>
+        </table>
+        <p>20-35 天是最佳平衡點：Theta 的衰減曲線不是直線的，它在最後 30 天開始加速。選 20-35 天，你正好搭上 Theta 加速列車的起點。</p>
+
+        <p><strong>IV Rank — 權利金的「肥瘦度」</strong></p>
+        <p>IV Rank 告訴你現在的隱含波動率在過去一年中排在什麼位置。原則：<strong>IV Rank > 30 再進場</strong>。</p>
+      </div>
+
+      <div class="analogy-card">
+        <span class="analogy-icon">🌀</span>
+        <div class="analogy-title">生活化比喻 — 颱風季賣雨傘保險</div>
+        <ul>
+          <li><strong>Delta</strong> 就是你選在哪條街賣。靠海邊（高 Delta）被波及機率高但保費也高；在山上（低 Delta）很安全但沒人買。市區（Delta -0.25 左右）是最好的平衡點。</li>
+          <li><strong>DTE</strong> 就是保單的期限。太短的保單（7天）雖然很快到期，但颱風來了反應不及；太長的保單（60天）等待期太久。一個月左右剛剛好。</li>
+          <li><strong>IV Rank</strong> 就是颱風季 vs 晴天季。颱風季大家搶著買保險，保費自然高（高 IV Rank），這時候賣保險最划算。</li>
+        </ul>
+      </div>
+    `
+  },
+  {
+    id: '2-4', level: 'LEVEL 02 · 實戰', levelColor: 'green',
+    title: '年化報酬率計算與下單流程',
+    content: `
+      <div class="content-block">
+        <h3>📘 年化報酬率</h3>
+        <p>當你看到一張選擇權的權利金時，你需要一種方式來比較不同天數、不同履約價之間的效率。年化報酬率就是這把尺。</p>
+        <div class="formula-box">年化報酬率 = (權利金 ÷ 佔用資金) × (365 ÷ 持有天數) × 100%</div>
+      </div>
+
+      <div class="example-box">
+        <div class="example-tag">數字範例</div>
+        <p>Sell Put NFLX，Strike $1,000，DTE = 30 天，收到權利金 $12</p>
+        <p>佔用資金 = $1,000 × 100 = $100,000</p>
+        <p>單次報酬率 = $1,200 ÷ $100,000 = <strong>1.2%</strong></p>
+        <p>年化報酬率 = 1.2% × (365 ÷ 30) = <strong>14.6%</strong></p>
+      </div>
+
+      <div class="content-block">
+        <p><strong>年化報酬率參考基準：</strong></p>
+        <table class="content-table">
+          <tr><th>年化報酬率</th><th>評估</th></tr>
+          <tr><td>8%-15%</td><td>合理且可持續的範圍</td></tr>
+          <tr><td>15%-25%</td><td>偏高，通常出現在 IV 較高時期</td></tr>
+          <tr><td>> 30%</td><td>極高，通常有重大事件風險（如財報）</td></tr>
+        </table>
+
+        <h3>📋 下單流程（Futu/Moomoo）</h3>
+        <ul class="summary-list">
+          <li><span class="num">1.</span>進入選定股票的選擇權鏈（Options Chain）</li>
+          <li><span class="num">2.</span>選 20-35 天後的到期日</li>
+          <li><span class="num">3.</span>找 Delta 在 -0.20 到 -0.35 之間的 Put</li>
+          <li><span class="num">4.</span>查看 Bid 價格（賣方用 Bid 價成交）</li>
+          <li><span class="num">5.</span>選擇 Sell to Open（開倉賣出）</li>
+          <li><span class="num">6.</span>設定 Limit 價格</li>
+          <li><span class="num">7.</span>檢查保證金佔用，確認送出</li>
+        </ul>
+
+        <h3>🎯 管理原則 — 50% 獲利提前平倉</h3>
+        <p>當權利金已從你賣出的價格下降了 50%，考慮 Buy to Close 平倉獲利了結。例如你賣 $12 的權利金，當它跌到 $6 時，花 $6 買回來平倉，鎖定 $6 的利潤，然後重新開一張新倉位。</p>
+        <p>為什麼不等到到期？因為後 50% 的利潤需要更長時間實現，且越接近到期日 Gamma 風險越高。</p>
+      </div>
+
+      <div class="analogy-card">
+        <span class="analogy-icon">🏦</span>
+        <div class="analogy-title">生活化比喻 — 比較定存方案</div>
+        <ul>
+          <li>A 銀行：存 30 天給你 1.2% → 年化 14.6%</li>
+          <li>B 銀行：存 45 天給你 1.5% → 年化 12.2%</li>
+        </ul>
+        <p>雖然 B 的單次利息比較高，但考慮時間成本，A 的效率其實更好。年化報酬率就是讓你做出這種比較的工具。</p>
+      </div>
+    `
+  },
+
+  // ── LEVEL 03 ──
+  {
+    id: '3-1', level: 'LEVEL 03 · 進階', levelColor: 'cyan',
+    title: 'CC 的收益上限與機會成本',
+    content: `
+      <div class="content-block">
+        <h3>📘 核心概念</h3>
+        <p><strong>Covered Call（CC）</strong>= 你持有 100 股股票 + 賣出 1 張 Call 選擇權。</p>
+        <p>你已經擁有股票了，現在你賣出一張 Call，等於跟市場說：「如果股價漲到某個價位以上，我願意用那個價格把股票賣掉。」作為回報，你收到權利金。</p>
+        <p><strong>收益結構：</strong></p>
+        <ul class="summary-list">
+          <li><span class="num">▸</span><strong>最大獲利</strong> = (履約價 − 持股成本) × 100 + 收到的權利金 → 這是<strong>固定上限</strong></li>
+          <li><span class="num">▸</span><strong>下方保護</strong> = 權利金提供一小段緩衝，但無法對抗大幅下跌</li>
+          <li><span class="num">▸</span><strong>機會成本</strong> = 你用「上漲的潛力」換取「確定的收入」</li>
+        </ul>
+        <p><strong>什麼時候適合？</strong>你覺得短期不太會大漲；想從持股中擠出現金流；願意在某個價格賣出。</p>
+        <p><strong>什麼時候謹慎？</strong>即將公布重大利好；你非常看好長期漲幅不願被賣掉。</p>
+      </div>
+
+      <div class="analogy-card">
+        <span class="analogy-icon">🏘️</span>
+        <div class="analogy-title">生活化比喻 — 房東的抉擇</div>
+        <p>你有一間市值 1,000 萬的房子。你跟一個人簽約：「未來一個月內，你有權利用 1,100 萬買走我的房子。」他付你 5 萬簽約金。</p>
+        <ul>
+          <li>房價只漲到 1,050 萬 → 對方不買，你保留房子 + 5 萬 ✅</li>
+          <li>房價漲到 1,300 萬 → 你必須用 1,100 萬賣出。你賺 100 萬價差 + 5 萬 = 105 萬。但如果沒賣 Call，你本來可以賺 300 萬</li>
+        </ul>
+        <p>那 200 萬的差距，就是你的<strong>機會成本</strong>。</p>
+      </div>
+    `
+  },
+  {
+    id: '3-2', level: 'LEVEL 03 · 進階', levelColor: 'cyan',
+    title: '履約價選擇：為何必須 ≥ 成本價',
+    content: `
+      <div class="content-block">
+        <h3>📘 核心概念</h3>
+        <p>這是 Covered Call 中<strong>最容易犯的新手錯誤</strong>，必須特別強調：</p>
+      </div>
+
+      <div class="warning-box">
+        <p>⚠️ <strong>履約價一定要設在你的持股成本價之上</strong>。如果成本 $100，履約價設 $95，股價漲到 $95 以上時股票被以 $95 賣走——你花 $100 買的股票用 $95 賣掉，即使加上權利金也可能虧損。</p>
+      </div>
+
+      <div class="example-box">
+        <div class="example-tag">正確計算方式</div>
+        <p>透過 Sell Put 被指派，買入 100 股 NFLX：</p>
+        <p>被指派的履約價：$1,000 ・當初 Sell Put 收到的權利金：$12/股</p>
+        <p><strong>真正的成本價</strong> = $1,000 − $12 = <strong>$988/股</strong></p>
+        <p>所以你的 CC 履約價至少要 ≥ $988，理想情況下 ≥ $1,000。</p>
+      </div>
+
+      <div class="content-block">
+        <h3>📋 Delta 選擇建議</h3>
+        <table class="content-table">
+          <tr><th>Delta 範圍</th><th>特性</th><th>建議</th></tr>
+          <tr class="highlight-row"><td>0.20-0.30</td><td>不容易被 Call 走，權利金少一些</td><td>初學者建議</td></tr>
+          <tr><td>0.30-0.40</td><td>權利金多，但被 Call 走機率增加</td><td>有經驗後可嘗試</td></tr>
+        </table>
+      </div>
+
+      <div class="analogy-card">
+        <span class="analogy-icon">🚗</span>
+        <div class="analogy-title">生活化比喻 — 賣車</div>
+        <p>你用 100 萬買了一台車，讓人用某個價格跟你買：</p>
+        <ul>
+          <li>價格設 95 萬 → 對方一定會買，但你虧了 5 萬 ❌</li>
+          <li>價格設 105 萬 → 對方可能買可能不買，但無論如何你不會虧錢 ✅</li>
+        </ul>
+        <p><strong>永遠不要讓你的 CC 變成一張「保證虧損」的合約。</strong></p>
+      </div>
+    `
+  },
+  {
+    id: '3-3', level: 'LEVEL 03 · 進階', levelColor: 'cyan',
+    title: 'Roll 策略：Buy to Close + Sell to Open',
+    content: `
+      <div class="content-block">
+        <h3>📘 核心概念</h3>
+        <p>Roll（展期）是選擇權管理中最實用的技巧之一。簡單說，就是把目前的倉位關掉，同時開一個新的倉位。</p>
+        <ul class="summary-list">
+          <li><span class="num">1.</span><strong>Buy to Close</strong>：花錢買回你之前賣出的選擇權，關閉現有倉位</li>
+          <li><span class="num">2.</span><strong>Sell to Open</strong>：賣出一張新的選擇權（通常是更遠的到期日，可能調整履約價）</li>
+        </ul>
+
+        <h3>📋 什麼時候需要 Roll？</h3>
+        <p><strong>情境一：快到期但股價逼近履約價</strong></p>
+        <p>你賣了一張 CC 履約價 $1,050，還有 3 天到期，股價已經漲到 $1,045。如果你不想被指派，可以 Buy to Close 目前這張 → Sell to Open 一張更遠到期日的 $1,050 或 $1,060 Call。保住股票，同時重新收取時間價值。</p>
+
+        <p><strong>情境二：提前達到 50% 獲利目標</strong></p>
+        <p>DTE 30 天時 Sell Put 收了 $10 權利金，15 天後跌到 $5。Buy to Close $5 平倉（鎖定 $5 利潤）→ Sell to Open 一張新的 30 天後到期的 Put。</p>
+      </div>
+
+      <div class="analogy-card">
+        <span class="analogy-icon">📝</span>
+        <div class="analogy-title">生活化比喻 — 續租約</div>
+        <p>你是房東，跟房客簽了一個月的短租約，快到期了：</p>
+        <ul>
+          <li><strong>不 Roll</strong>：讓租約到期，可能要空窗找新房客</li>
+          <li><strong>Roll</strong>：在舊約到期前，直接跟房客（或新房客）續簽下一個月，確保租金收入不中斷</li>
+        </ul>
+      </div>
+
+      <div class="warning-box">
+        <p>⚠️ <strong>Roll 的注意事項</strong>：理想的 Roll 應該是 <strong>Net Credit</strong>（新賣出的權利金 > 買回舊倉位的成本）。如果 Roll 無法產生 Net Credit，可能要考慮接受指派而不是硬 Roll。</p>
+      </div>
+    `
+  },
+  {
+    id: '3-4', level: 'LEVEL 03 · 進階', levelColor: 'cyan',
+    title: '被 Call 走後的資金再部署',
+    content: `
+      <div class="content-block">
+        <h3>📘 核心概念</h3>
+        <p>如果你的 CC 到期時股價 > 履約價，你的 100 股會被以履約價賣掉。這不是壞事——你設定的履約價是你願意賣出的價格。</p>
+        <p>現在你手上有了現金（履約價 × 100 + 之前收到的權利金），<strong>Wheel 的美妙之處——循環開始了：</strong></p>
+        <ul class="summary-list">
+          <li><span class="num">1.</span>股票被 Call 走 → 手上有現金</li>
+          <li><span class="num">2.</span>用這筆現金重新 Sell Put → 收取新的權利金</li>
+          <li><span class="num">3.</span>如果 Put 到期作廢 → 繼續 Sell Put → 持續收租</li>
+          <li><span class="num">4.</span>如果被指派 → 重新擁有 100 股 → 開始 Sell CC</li>
+          <li><span class="num">5.</span>回到步驟 1 — 不斷循環轉動</li>
+        </ul>
+
+        <h3>📋 資金再部署的決策流程</h3>
+        <ul class="summary-list">
+          <li><span class="num">▸</span><strong>同一檔繼續？</strong>如果仍然看好這家公司，基本面沒改變，可以繼續。</li>
+          <li><span class="num">▸</span><strong>換一檔？</strong>原來的股票 IV 已經很低，或你找到更好的機會。</li>
+          <li><span class="num">▸</span><strong>暫時休息？</strong>如果 VIX 很低，所有標的的權利金都很瘦，不如等待更好的機會。</li>
+        </ul>
+      </div>
+
+      <div class="analogy-card">
+        <span class="analogy-icon">🏭</span>
+        <div class="analogy-title">生活化比喻 — 自動販賣機經營循環</div>
+        <ul>
+          <li><strong>用現金進貨</strong>（Sell Put = 準備用某個價格買入股票）</li>
+          <li><strong>貨物到了</strong>（被指派 = 拿到 100 股股票）</li>
+          <li><strong>擺上貨架賣</strong>（CC = 願意在某個價格賣出）</li>
+          <li><strong>賣掉了</strong>（被 Call 走 = 收到現金）</li>
+          <li><strong>再進貨</strong>（重新 Sell Put）</li>
+        </ul>
+        <p>每個環節你都在收「手續費」（權利金），機器不停地轉。</p>
+      </div>
+    `
+  },
+
+  // ── LEVEL 04 ──
+  {
+    id: '4-1', level: 'LEVEL 04 · 高階', levelColor: 'amber',
+    title: '資金管理：每筆部位佔比上限',
+    content: `
+      <div class="content-block">
+        <h3>📘 核心概念</h3>
+        <p>即使你找到了完美的選擇權交易，如果你把全部資金壓在一個部位上，一次意外事件就可能造成無法承受的損失。資金管理就是確保你<strong>「活得夠久」</strong>，讓機率優勢有時間發揮的紀律。</p>
+
+        <p><strong>核心規則：</strong></p>
+        <ul class="summary-list">
+          <li><span class="num">▸</span><strong>單一部位佔帳戶資金 ≤ 30%-50%</strong></li>
+          <li><span class="num">▸</span><strong>留有現金緩衝</strong>：至少保留帳戶的 20%-30% 作為預備金</li>
+          <li><span class="num">▸</span><strong>不要同時開太多同一方向的部位</strong>：例如同時 Sell Put 三檔科技股，科技股整體下跌時三個部位會同時出問題</li>
+        </ul>
+
+        <table class="content-table">
+          <tr><th>帳戶大小</th><th>建議同時持有部位數</th><th>單一部位上限</th></tr>
+          <tr><td>< $30,000</td><td>1-2 個</td><td>50%</td></tr>
+          <tr><td>$30,000-$60,000</td><td>2-3 個</td><td>33%</td></tr>
+          <tr><td>$60,000-$100,000</td><td>3-5 個</td><td>25%</td></tr>
+          <tr><td>> $100,000</td><td>4-6 個</td><td>20%</td></tr>
+        </table>
+      </div>
+
+      <div class="analogy-card">
+        <span class="analogy-icon">🥚</span>
+        <div class="analogy-title">生活化比喻 — 雞蛋與籃子</div>
+        <p>你是一個在市場賣蛋的攤販，有 10 籃雞蛋：</p>
+        <ul>
+          <li><strong>新手做法</strong>：把 10 籃全放在一輛推車上。效率很高，但推車翻了就全毀。</li>
+          <li><strong>聰明做法</strong>：分 3 輛推車，每輛放 3 籃，留 1 籃在家當備用。就算一輛車翻了，你還有另外兩車的雞蛋可以賣，家裡還有備用。</li>
+        </ul>
+        <p>在選擇權交易中，「推車翻了」就是某個部位因為黑天鵝事件大幅虧損。你的資金管理計畫，就是確保一輛車翻了不會讓你破產。</p>
+      </div>
+    `
+  },
+  {
+    id: '4-2', level: 'LEVEL 04 · 高階', levelColor: 'amber',
+    title: '展期（Roll）的時機與條件',
+    content: `
+      <div class="content-block">
+        <h3>📘 核心概念</h3>
+        <p>在 Level 03 中我們學過 Roll 的機制，這裡要深入探討更進階的決策框架。</p>
+
+        <h3>📋 Roll 的決策樹</h3>
+        <div class="decision-tree">目前的部位狀況如何？
+├── 已達 50% 獲利 → ✅ 平倉獲利，考慮重新開倉
+├── 快到期，仍為 OTM → ✅ 讓它到期作廢，或 Roll 到下個月
+├── 快到期，接近 ATM → ⚠️ 評估是否 Roll
+│   ├── Roll 能產生 Net Credit？ → ✅ 可以 Roll
+│   └── Roll 會產生 Net Debit？ → ❌ 考慮接受指派
+└── 已深入 ITM → ❌ 通常接受指派比硬 Roll 更合理</div>
+
+        <p><strong>Roll 的三個「必須」：</strong></p>
+        <ul class="summary-list">
+          <li><span class="num">1.</span><strong>必須產生 Net Credit</strong>：Roll 的目的是延續收入，如果你要倒貼錢去 Roll，那等於是花錢「延後」問題。</li>
+          <li><span class="num">2.</span><strong>必須有合理的理由</strong>：不是因為「不想認賠」而 Roll。如果你對股票的看法已經改變，不如接受現實。</li>
+          <li><span class="num">3.</span><strong>必須檢查新的 DTE 和 Delta</strong>：Roll 到的新倉位應符合策略參數（20-35 DTE、Delta -0.20 到 -0.35）。</li>
+        </ul>
+      </div>
+
+      <div class="analogy-card">
+        <span class="analogy-icon">📚</span>
+        <div class="analogy-title">生活化比喻 — 考試申請延期</div>
+        <ul>
+          <li>準備不足但有信心多一週就能考好（Net Credit Roll）→ 申請延期是明智的</li>
+          <li>根本沒在唸書，延期只是拖延問題（Net Debit Roll）→ 不如先考了再說</li>
+          <li>已經嚴重落後，再延期也救不了（深度 ITM）→ 接受現實，重新規劃</li>
+        </ul>
+      </div>
+    `
+  },
+  {
+    id: '4-3', level: 'LEVEL 04 · 高階', levelColor: 'amber',
+    title: '多標的 Wheel 組合管理',
+    content: `
+      <div class="content-block">
+        <h3>📘 核心概念</h3>
+        <p>當你的帳戶資金足夠大，可以同時在多檔股票上執行 Wheel 策略時，你需要考慮「組合層面」的管理。</p>
+
+        <p><strong>分散的三個維度：</strong></p>
+        <ul class="summary-list">
+          <li><span class="num">1.</span><strong>產業分散</strong>：不要全部集中在科技股。標的應分布在 2-3 個不同的產業。</li>
+          <li><span class="num">2.</span><strong>到期日分散</strong>：不要所有部位都在同一天到期。錯開到期日，讓你每週都有到期的部位需要處理。</li>
+          <li><span class="num">3.</span><strong>方向分散</strong>：同時有 Sell Put 和 CC，你的組合對市場漲跌有自然對沖。</li>
+        </ul>
+
+        <h3>📋 每週 15 分鐘檢查清單</h3>
+        <ul class="summary-list">
+          <li><span class="num">☐</span>是否有任何部位已達 50% 獲利？→ 考慮提前平倉</li>
+          <li><span class="num">☐</span>是否有任何部位即將到期？→ 決定讓它到期還是 Roll</li>
+          <li><span class="num">☐</span>是否有任何部位深度 ITM？→ 評估是否需要應對</li>
+          <li><span class="num">☐</span>整體資金使用率是多少？→ 確保沒有超過上限</li>
+          <li><span class="num">☐</span>是否過度集中在某個產業？→ 下次開倉時考慮分散</li>
+        </ul>
+      </div>
+
+      <div class="analogy-card">
+        <span class="analogy-icon">🏢</span>
+        <div class="analogy-title">生活化比喻 — 經營多戶出租公寓</div>
+        <ul>
+          <li>你不會希望所有房客的租約都在同一天到期（<strong>到期日分散</strong>）</li>
+          <li>你會有不同類型的房客：上班族、學生、小家庭（<strong>產業分散</strong>）</li>
+          <li>每個月你做一次巡視，看看哪些需要維修，哪些租約快到期要續約（<strong>每週檢查</strong>）</li>
+          <li>你不會把全部積蓄拿去買公寓，總要留一些現金應急（<strong>資金緩衝</strong>）</li>
+        </ul>
+      </div>
+    `
+  },
+  {
+    id: '4-4', level: 'LEVEL 04 · 高階', levelColor: 'amber',
+    title: '交易日誌與績效追蹤',
+    content: `
+      <div class="content-block">
+        <h3>📘 核心概念</h3>
+        <p>交易日誌是你進步的最大加速器。沒有記錄，你無法知道自己的策略是不是真的有效，也無法從錯誤中學習。</p>
+
+        <h3>📋 每筆交易應記錄的資訊</h3>
+        <table class="content-table">
+          <tr><th>欄位</th><th>範例</th></tr>
+          <tr><td>日期</td><td>2026-04-08</td></tr>
+          <tr><td>標的</td><td>NFLX</td></tr>
+          <tr><td>策略</td><td>Sell Put</td></tr>
+          <tr><td>履約價</td><td>$1,000</td></tr>
+          <tr><td>到期日 / DTE</td><td>2026-05-08 / 30 天</td></tr>
+          <tr><td>Delta</td><td>-0.25</td></tr>
+          <tr><td>收到權利金</td><td>$12.00</td></tr>
+          <tr><td>IV Rank</td><td>45</td></tr>
+          <tr><td>開倉原因</td><td>IV Rank 偏高，基本面穩健</td></tr>
+          <tr><td>平倉日期 / 價格</td><td>2026-04-23 / $5.50</td></tr>
+          <tr><td>損益</td><td>+$6.50/股 = +$650</td></tr>
+          <tr><td>結果</td><td>提前平倉（50% 獲利達成）</td></tr>
+          <tr><td>反思</td><td>進場時機好，IV 下降速度比預期快</td></tr>
+        </table>
+
+        <h3>📊 長期應關注的指標</h3>
+        <ul class="summary-list">
+          <li><span class="num">▸</span>月均收入是否穩定？（目標 $600-700/月）</li>
+          <li><span class="num">▸</span>勝率是否維持在 70% 以上？</li>
+          <li><span class="num">▸</span>平均每次虧損是否遠小於帳戶規模？</li>
+          <li><span class="num">▸</span>有沒有某個標的或策略反覆出問題？</li>
+        </ul>
+      </div>
+
+      <div class="analogy-card">
+        <span class="analogy-icon">🏋️</span>
+        <div class="analogy-title">生活化比喻 — 健身紀錄</div>
+        <ul>
+          <li>如果你去健身房但從不記錄做了什麼，三個月後你無法知道自己有沒有進步</li>
+          <li>記錄讓你看到趨勢：「我的深蹲重量每月都在增加」「我的有氧耐力進步了」</li>
+          <li>當你遇到瓶頸時，翻回去看紀錄，往往能找到原因</li>
+        </ul>
+        <p>交易也一樣。定期回顧你的日誌，你會發現模式：「每次 IV Rank 低於 25 的時候我都虧錢」「我的 NFLX 交易表現明顯比其他股票好」——這些洞察是用錢買不到的。</p>
+      </div>
+
+      <div class="content-block">
+        <h3>🎯 行動建議</h3>
+        <p>從今天開始，用最簡單的方式記錄——一個 Google Sheet 或 Excel 就夠了。不需要華麗的格式，重要的是<strong>每筆都記，每月都回顧</strong>。堅持三個月，你會感謝自己。</p>
+      </div>
+
+      <div class="example-box" style="border-color: rgba(201,168,76,0.3); background: rgba(201,168,76,0.04); margin-top: 2rem;">
+        <div class="example-tag" style="color: var(--accent-gold);">🎉 恭喜完成全部課程</div>
+        <p style="color: var(--text-primary); font-weight: 500;">選擇權交易是一場馬拉松，不是短跑。保持紀律、控制風險、持續學習，月入 $600-700 的權利金收入目標是完全可以實現的。</p>
+      </div>
+    `
+  },
+];
+
+const UNIT_ORDER = UNITS.map(u => u.id);
+
+function openUnit(id) {
+  const idx = UNIT_ORDER.indexOf(id);
+  if (idx === -1) return;
+  const unit = UNITS[idx];
+
+  const prevUnit = idx > 0 ? UNITS[idx - 1] : null;
+  const nextUnit = idx < UNITS.length - 1 ? UNITS[idx + 1] : null;
+  const progress = ((idx + 1) / UNITS.length) * 100;
+
+  document.getElementById('courseLanding').style.display = 'none';
+  const detail = document.getElementById('courseDetail');
+  detail.style.display = 'block';
+
+  detail.innerHTML = `
+    <div class="progress-bar-container"><div class="progress-bar-fill" style="width:${progress}%"></div></div>
+    <button class="detail-back" onclick="goBack()">← 回到課程總覽</button>
+    <div class="detail-level-tag">${unit.level}</div>
+    <h1 class="detail-unit-title">${unit.title}</h1>
+    ${unit.content}
+    <div class="unit-nav">
+      <button class="unit-nav-btn" ${!prevUnit ? 'disabled' : ''} onclick="${prevUnit ? `openUnit('${prevUnit.id}')` : ''}">
+        <span class="arrow">←</span> ${prevUnit ? prevUnit.title.substring(0, 15) + '…' : ''}
+      </button>
+      <span class="unit-nav-info">${idx + 1} / ${UNITS.length}</span>
+      <button class="unit-nav-btn" ${!nextUnit ? 'disabled' : ''} onclick="${nextUnit ? `openUnit('${nextUnit.id}')` : ''}">
+        ${nextUnit ? nextUnit.title.substring(0, 15) + '…' : '已完成'} <span class="arrow">→</span>
+      </button>
+    </div>
+  `;
+
+  // Scroll to top of courses section
+  document.getElementById('courses').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function goBack() {
+  document.getElementById('courseDetail').style.display = 'none';
+  document.getElementById('courseLanding').style.display = 'block';
+  document.getElementById('courses').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function goHome() {
+  goBack();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+</script>
+</body>
+</html>
